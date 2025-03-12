@@ -13,6 +13,7 @@ const Header = () => {
                 <Link href="/BadmintonCourt" className="hover:underline">การจอง</Link>
                 <Link href="/BadmintonCourt" className="hover:underline">ประวัติการจอง</Link>
                 <Link href="/BadmintonCourt" className="hover:underline">ข้อมูลของฉัน</Link>
+                <Link href="/BadmintonShop" className="hover:underline">Shop</Link>
             </nav>
             <button 
                 className="bg-gray-200 text-black font-bold px-4 py-2 rounded-md hover:bg-gray-300 border-2 border-black cursor-pointer" 
