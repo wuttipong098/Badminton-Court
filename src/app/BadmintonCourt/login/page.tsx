@@ -16,6 +16,11 @@ const LoginPage = () => {
     router.push("/BadmintonCourt/new");
   };
 
+  const handleRegisterClick = () => {
+    // เมื่อคลิกที่ "สมัครบัญชีผู้ใช้งาน"
+    router.push("/BadmintonCourt/register");
+  };
+
   return (
     <div className="flex justify-center items-center h-screen bg-gray-300">
       <div className="flex w-[700px] h-[400px] bg-white rounded-xl shadow-lg overflow-hidden">
@@ -23,12 +28,10 @@ const LoginPage = () => {
         <div className="w-2/5 flex items-center justify-center bg-white">
           <Image src={logo} alt="Badminton Court Logo" width={150} height={150} />
         </div>
-
         {/* Right Panel */}
         <div className="w-3/5 bg-[#1F9378] flex flex-col justify-center items-center p-6">
           <h1 className="text-white text-2xl mb-5">ลงชื่อเข้าใช้งาน</h1>
           <form className="w-full px-8" onSubmit={handleSubmit}>
-            {/* ช่องป้อนชื่อผู้ใช้ */}
             <div className="mb-3">
               <input
                 type="text"
@@ -60,7 +63,6 @@ const LoginPage = () => {
               )}
             </div>
 
-            {/* ปุ่มยืนยัน */}
             <button
               type="submit"
               className="w-full py-2 bg-[#3498db] text-white text-lg font-semibold rounded-lg shadow-md hover:bg-[#2980b9] transition cursor-pointer"
@@ -69,8 +71,10 @@ const LoginPage = () => {
             </button>
           </form>
 
-          {/* ปุ่มสมัครบัญชี */}
-          <div className="mt-3 text-white font-semibold text-lg drop-shadow-[1px_1px_0px_rgba(255,0,0,1)] cursor-pointer hover:scale-105 transition">
+          <div
+            onClick={handleRegisterClick} 
+            className="mt-3 text-white font-semibold text-lg drop-shadow-[1px_1px_0px_rgba(255,0,0,1)] cursor-pointer hover:scale-105 transition"
+          >
             สมัครบัญชีผู้ใช้งาน
           </div>
         </div>
@@ -80,3 +84,5 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
+

@@ -9,10 +9,10 @@ const Header = () => {
     return (
         <header className="bg-[#1F9378] p-4 flex justify-between items-center">
             <nav className="flex space-x-6 text-white text-lg">
-                <Link href="/BadmintonCourt" className="hover:underline">หน้าหลัก</Link>
-                <Link href="/BadmintonCourt" className="hover:underline">การจอง</Link>
-                <Link href="/BadmintonCourt" className="hover:underline">ประวัติการจอง</Link>
-                <Link href="/BadmintonCourt" className="hover:underline">ข้อมูลของฉัน</Link>
+                <Link href="/BadmintonCourt/new" className="hover:underline">หน้าหลัก</Link>
+                <Link href="/BadmintonCourt/reservation" className="hover:underline">การจอง</Link>
+                <Link href="/BadmintonCourt/historys" className="hover:underline">ประวัติการจอง</Link>
+                <Link href="/BadmintonCourt/account" className="hover:underline">ข้อมูลของฉัน</Link>
             </nav>
             <button 
                 className="bg-gray-200 text-black font-bold px-4 py-2 rounded-md hover:bg-gray-300 border-2 border-black cursor-pointer" 
