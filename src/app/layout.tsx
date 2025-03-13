@@ -2,6 +2,7 @@
 import '../styles/globals.css';
 import Header from './BadmintonCourt/components/Header';
 import { usePathname } from 'next/navigation';
+import HeaderShop from './BadmintonShop/components/Header';
 export default function RootLayout({
     children,
 }: {
@@ -12,7 +13,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
-                {pathname !== '/BadmintonCourt/login' && <Header />}
+            {pathname.includes("/BadmintonShop") ? <HeaderShop /> : <Header />}
                 <main>{children}</main>
             </body>
         </html>
