@@ -1,8 +1,9 @@
 "use client";
 import '../styles/globals.css';
-import Header from './BadmintonCourt/components/Header';
-import { usePathname } from 'next/navigation';
+import Header from './components/Header';
 import HeaderShop from './BadmintonShop/components/Header';
+import { usePathname } from 'next/navigation';
+
 export default function RootLayout({
     children,
 }: {
@@ -13,9 +14,8 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
-                {!pathname.includes("/BadmintonCourt/login") &&
-                 !pathname.includes("/BadmintonCourt/register") &&
-                 (pathname.includes("/BadmintonShop") ? <HeaderShop /> : <Header />)}
+                {pathname.startsWith('/BadmintonShop') ? <HeaderShop /> 
+                : pathname !== '/BadmintonCourt/login' && pathname !== '/BadmintonCourt/register' && <Header />}              
                 <main>{children}</main>
             </body>
         </html>
