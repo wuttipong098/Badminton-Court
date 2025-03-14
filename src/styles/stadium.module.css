@@ -1,6 +1,6 @@
 .header {
     position: absolute;
-    top: 100px; /* ขยับตำแหน่ง .header ลงจากด้านบน 100px */
+    top: 100px; /* ขยับตำแหน่ง .header ลงจากด้านบน */
     display: flex;
     flex-direction: column; /* ให้ h1 อยู่ข้างบน h2 อยู่ข้างล่าง */
     padding-left: 20px; /* ขยับตัวหนังสือไปทางซ้าย */
@@ -31,27 +31,104 @@
     position: relative; /* ให้ .header ซ้อนทับได้ */
 }
 
-.groupbutton {
-    position: absolute;
-    right: 21px; /* กำหนดระยะห่างจากขอบขวาของหน้าจอ */
-    bottom: 20px; /* กำหนดระยะห่างจากด้านล่าง */
+/* ปรับตำแหน่ง controlContainer */
+.controlContainer {
+    display: flex;
+    justify-content: flex-end; /* จัดให้ไปทางขวา */
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    top: 80px; /* ขยับลง */
+    right: 50px; /* ขยับไปทางขวา */
+}
+
+/* ปรับขนาด input และ select ให้เท่ากัน */
+.inputday, .time select {
+    width: 150px; /* กำหนดขนาดให้เท่ากัน */
+    height: 40px; /* กำหนดความสูงให้เท่ากัน */
+    padding: 5px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    text-align: center; /* จัดให้อยู่ตรงกลาง */
+    background-color: white;
 }
 
 
+.day, .time, .groupbutton {
+    display: flex;
+    align-items: center;
+}
+
+/* ปรับปุ่มจอง */
 .button {
     background-color: #379DD6;
     color: white;
     border: none;
-    padding: 10px 20px; /* ปรับขนาด padding */
-    font-size: 24px;
+    padding: 10px 20px;
+    font-size: 18px;
     border-radius: 10px;
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: background-color 0.3s ease;
-    width: auto; /* ความกว้างของปุ่มจะพอดีกับข้อความ */
-    text-align: center; /* จัดข้อความให้อยู่กลาง */
 }
 
 .button:hover {
     background-color: #2980b9;
 }
+
+.buttons {
+    background-color: #379DD6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.buttons:hover {
+    background-color: #2980b9;
+}
+ 
+.calendarIcon {
+    position: absolute;
+    right: 343px; /* ตำแหน่งไอคอน */
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.grouptimbox {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background-color: #D9D9D9;
+    padding: 10px;
+    border-radius: 8px;
+    justify-content: flex-start;
+}
+
+.timebox {
+    background-color: #3BBC7A;
+    color: white;
+    border: none;
+    padding: 5px 10px; /* ลด padding ลง */
+    border-radius: 8px;
+    font-size: 10px; /* ลดขนาดฟอนต์ลง */
+    font-weight: bold;
+    cursor: pointer;
+    min-width: 80px; /* ลดขนาด min-width */
+    text-align: center;
+    transition: background-color 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.boldText {
+    font-weight: bold;
+    font-size: 10px; /* ลดขนาดฟอนต์ของ .boldText ลง */
+}
+
