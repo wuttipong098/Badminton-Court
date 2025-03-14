@@ -8,9 +8,9 @@ const MainPage = () => {
     return (
         <div className="relative flex flex-col items-start justify-center min-h-screen bg-white overflow-hidden">
             {/* พื้นหลังด้านบนเอียง */}
-            <div className="absolute top-0 left-0 w-full h-55 bg-[#1F9378] skew-y-[-6deg] origin-top-left"></div>
+            <div className="absolute top-0 left-0 w-full h-60 bg-[#1F9378] skew-y-[-6deg] origin-top-left"></div>
             {/* Header */}
-            <div className="text-left w-full max-w-lg text-white relative z-10 p-6 mt-[-50px]">
+            <div className="text-left w-full max-w-lg text-white relative z-10 p-6 mt-[-60px]">
                 <h1 className="text-3xl font-bold">Badminton</h1>
                 <h2 className="text-3xl font-semibold">CourtBooking</h2>
             </div>
