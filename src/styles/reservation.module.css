@@ -1,0 +1,137 @@
+.header {
+    position: absolute;
+    top: 100px; /* ขยับตำแหน่ง .header ลงจากด้านบน 100px */
+    display: flex;
+    flex-direction: column; /* ให้ h1 อยู่ข้างบน h2 อยู่ข้างล่าง */
+    padding-left: 20px; /* ขยับตัวหนังสือไปทางซ้าย */
+}
+
+.h1 {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.h2 {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    margin-top: -20px; /* ขยับ h2 ขึ้นไปอีก */
+}
+
+.ball {
+    margin-left: 50px; /* ระยะห่างของไอคอนลูกขนไก่ */
+    position: absolute; /* ให้รูปบอลอยู่ข้างๆ h1 */
+    top: 30%;
+    left: 160px; /* ระยะห่างจาก h1 */
+    transform: translateY(-50%); /* จัดตำแหน่งให้รูปอยู่กลางแนวตั้ง */
+}
+
+.w-full {
+    position: relative; /* ให้ .header ซ้อนทับได้ */
+}
+
+/* Header Navigation */
+.headernav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px; /* ระยะห่างระหว่าง input, button และ select */
+    padding: 15px;
+    background-color: #ffffff;
+}
+
+/* Search Box */
+.search {
+    position: relative;
+    width: 300px; /* กำหนดขนาด input */
+}
+
+.insearch {
+    width: 100%;
+    padding: 10px 10px 10px 40px; /* เว้นที่ด้านซ้ายให้ไอคอน */
+    font-size: 16px;
+    border: 2px solid #1F9378;
+    border-radius: 8px;
+    outline: none;
+}
+
+/* Search Icon */
+.searchIcon {
+    position: absolute;
+    left: 10px; /* วางไอคอนด้านซ้ายของ input */
+    top: 50%;
+    transform: translateY(-50%);
+    color: #1F9378;
+}
+
+
+.buttons, .province {
+    background-color: #1F9378;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 5px;
+}
+
+.heartIcon {
+    color: #FF0044;  /* สีปกติของไอคอน */
+    margin-left: 10px;  /* เว้นระยะจาก select */
+    cursor: pointer;  /* เปลี่ยนเคอร์เซอร์เป็นมือเมื่อชี้ไปที่ไอคอน */
+    transition: color 0.3s ease;  /* ทำให้การเปลี่ยนสีลื่นไหล */
+}
+
+/* เมื่อไอคอนถูกกด */
+.liked {
+    color: #FF0044;  /* สีใหม่เมื่อไอคอนถูกกด */
+}
+
+.courtList {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    
+}
+
+.courtItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 80%;
+    background-color: #1F9378;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    
+}
+
+.selectButton {
+    background-color: #379DD6;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+}
+
+.selectButton:hover {
+    background-color: #2980b9; /* เทียบเท่ากับ hover:bg-[#2980b9] */
+}
+
+
+.favorite {
+    color: #FF0044;
+    cursor: pointer;
+}
+
+.notFavorite {
+    color: gray;
+    cursor: pointer;
+}
