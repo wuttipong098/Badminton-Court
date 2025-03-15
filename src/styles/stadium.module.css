@@ -1,9 +1,9 @@
 .header {
     position: absolute;
-    top: 100px; /* ขยับตำแหน่ง .header ลงจากด้านบน */
+    top: 100px;
     display: flex;
-    flex-direction: column; /* ให้ h1 อยู่ข้างบน h2 อยู่ข้างล่าง */
-    padding-left: 20px; /* ขยับตัวหนังสือไปทางซ้าย */
+    flex-direction: column;
+    padding-left: 20px;
 }
 
 .h1 {
@@ -16,51 +16,70 @@
     color: white;
     font-size: 36px;
     font-weight: bold;
-    margin-top: -20px; /* ขยับ h2 ขึ้นไปอีก */
+    margin-top: -20px;
 }
 
 .ball {
-    margin-left: 50px; /* ระยะห่างของไอคอนลูกขนไก่ */
-    position: absolute; /* ให้รูปบอลอยู่ข้างๆ h1 */
+    margin-left: 50px;
+    position: absolute;
     top: 30%;
-    left: 160px; /* ระยะห่างจาก h1 */
-    transform: translateY(-50%); /* จัดตำแหน่งให้รูปอยู่กลางแนวตั้ง */
+    left: 160px;
+    transform: translateY(-50%);
 }
 
 .w-full {
-    position: relative; /* ให้ .header ซ้อนทับได้ */
+    position: relative;
 }
 
-/* ปรับตำแหน่ง controlContainer */
 .controlContainer {
     display: flex;
-    justify-content: flex-end; /* จัดให้ไปทางขวา */
+    justify-content: flex-end;
     align-items: center;
     gap: 15px;
     position: relative;
-    top: 80px; /* ขยับลง */
-    right: 50px; /* ขยับไปทางขวา */
+    top: 80px;
+    right: 50px;
 }
 
-/* ปรับขนาด input และ select ให้เท่ากัน */
 .inputday, .time select {
-    width: 150px; /* กำหนดขนาดให้เท่ากัน */
-    height: 40px; /* กำหนดความสูงให้เท่ากัน */
+    width: 150px;
+    height: 40px;
     padding: 5px;
     font-size: 16px;
     border-radius: 5px;
     border: 1px solid #ccc;
-    text-align: center; /* จัดให้อยู่ตรงกลาง */
+    text-align: center;
     background-color: white;
+    color: #000000; /* เพิ่มสีของข้อความใน input ให้เป็นสีดำเข้ม */
 }
 
+/* ปรับสี placeholder ให้เข้มขึ้นเป็นสีดำ */
+.inputday::placeholder {
+    color: #000000; /* สีดำ */
+    opacity: 1; /* ป้องกันเบราว์เซอร์ลด opacity */
+}
+
+/* สำหรับเบราว์เซอร์ที่ใช้ prefix เช่น Chrome, Safari */
+.inputday::-webkit-input-placeholder {
+    color: #000000;
+}
+
+/* สำหรับ Firefox */
+.inputday::-moz-placeholder {
+    color: #000000;
+    opacity: 1;
+}
+
+/* สำหรับ Edge */
+.inputday::-ms-input-placeholder {
+    color: #000000;
+}
 
 .day, .time, .groupbutton {
     display: flex;
     align-items: center;
 }
 
-/* ปรับปุ่มจอง */
 .button {
     background-color: #379DD6;
     color: white;
@@ -90,10 +109,10 @@
 .buttons:hover {
     background-color: #2980b9;
 }
- 
+
 .calendarIcon {
     position: absolute;
-    right: 343px; /* ตำแหน่งไอคอน */
+    right: 343px;
     width: 24px;
     height: 24px;
     cursor: pointer;
@@ -113,12 +132,12 @@
     background-color: #3BBC7A;
     color: white;
     border: none;
-    padding: 5px 10px; /* ลด padding ลง */
+    padding: 5px 10px;
     border-radius: 8px;
-    font-size: 10px; /* ลดขนาดฟอนต์ลง */
+    font-size: 10px;
     font-weight: bold;
     cursor: pointer;
-    min-width: 80px; /* ลดขนาด min-width */
+    min-width: 80px;
     text-align: center;
     transition: background-color 0.3s;
     display: flex;
@@ -127,8 +146,26 @@
     justify-content: center;
 }
 
+.timebox.selected {
+    background-color: #379DD6;
+}
+
+.timebox:hover {
+    background-color: #2ea865;
+}
+
+.timebox.selected:hover {
+    background-color: #2980b9;
+}
+
 .boldText {
     font-weight: bold;
-    font-size: 10px; /* ลดขนาดฟอนต์ของ .boldText ลง */
+    font-size: 10px;
+}
+
+.hiddenDatePicker {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
 }
 
