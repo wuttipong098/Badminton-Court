@@ -7,6 +7,8 @@ import calendar from "@/public/calendar.png";
 import court from "@/public/corut.png";
 import { useRouter } from "next/navigation";
 import { useState } from 'react';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
 type TimeSlot = {
     time: string;
@@ -18,6 +20,8 @@ const StadiumPage = () => {
     const [selectedTime, setSelectedTime] = useState("");
     const [selectedTimeSlots, setSelectedTimeSlots] = useState<TimeSlot[]>([]);
     const [selectedDate, setSelectedDate] = useState<string>("");
+
+    const MySwal = withReactContent(Swal);
 
     const handleClick = () => {
         router.push("/BadmintonCourt/reservation/stadium");
@@ -45,6 +49,48 @@ const StadiumPage = () => {
         const [year, month, day] = dateString.split("-");
         const thaiYear = parseInt(year) + 543;
         return `${day}/${month}/${thaiYear}`;
+    };
+
+    // ฟังก์ชันจัดการการจอง
+    const handleBooking = () => {
+        if (selectedTimeSlots.length === 0 || !selectedDate) {
+            MySwal.fire({
+                icon: 'warning',
+                title: 'กรุณาเลือกวันที่และเวลาที่ต้องการจอง',
+                confirmButtonText: 'ตกลง',
+            });
+            return;
+        }
+
+        // เรียงลำดับ selectedTimeSlots ตามสนาม (court) และเวลา (time)
+        const sortedTimeSlots = [...selectedTimeSlots].sort((a, b) => {
+            // เรียงตามสนามก่อน
+            if (a.court !== b.court) {
+                return a.court - b.court; // จากน้อยไปมากตามเลขสนาม
+            }
+            // ถ้าสนามเท่ากัน ให้เรียงตามเวลา
+            return a.time.localeCompare(b.time); // เรียงตามตัวอักษรของเวลา
+        });
+
+        // สร้าง bookingDetails จาก sortedTimeSlots
+        const bookingDetails = sortedTimeSlots.map(slot => 
+            `สนามที่ ${slot.court}: ${slot.time}`
+        ).join('<br>');
+
+        MySwal.fire({
+            icon: 'warning',
+            title: 'ยืนยันการจอง',
+            html: `
+                <p>วันที่: ${selectedDate}</p>
+                <p>รายละเอียดการจอง:</p>
+                ${bookingDetails}
+            `,
+            confirmButtonText: 'ชำระเงิน',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.push("/BadmintonCourt/reservation/payment");
+            }
+        });
     };
 
     const renderTimeSlots = (courtIndex: number) => {
@@ -123,11 +169,11 @@ const StadiumPage = () => {
                         </select>
                     </div>
                     <div className="flex space-x-2">
-                        <button className={styles.button}>จอง</button>
+                        <button className={styles.button} onClick={handleBooking}>จอง</button>
                         <button className={styles.buttons}>ค้นหา</button>
                     </div>
                 </div>
-                <div className="mt-20"> {/* ระยะห่างจาก controlContainer เป็น 80px */}
+                <div className="mt-20">
                     {[1, 2, 3, 4, 5].map((courtIndex) => (
                         <div key={courtIndex}>
                             <div className={`${courtIndex === 1 ? styles['mt-25-custom'] : 'mt-2'} mb-6 p-4`}>
