@@ -1,0 +1,33 @@
+.header {
+    position: absolute;
+    top: 100px; /* ขยับตำแหน่ง .header ลงจากด้านบน 100px */
+    display: flex;
+    flex-direction: column; /* ให้ h1 อยู่ข้างบน h2 อยู่ข้างล่าง */
+    padding-left: 20px; /* ขยับตัวหนังสือไปทางซ้าย */
+}
+
+.h1 {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.h2 {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    margin-top: -20px; /* ขยับ h2 ขึ้นไปอีก */
+}
+
+.ball {
+    margin-left: 50px; /* ระยะห่างของไอคอนลูกขนไก่ */
+    position: absolute; /* ให้รูปบอลอยู่ข้างๆ h1 */
+    top: 30%;
+    left: 160px; /* ระยะห่างจาก h1 */
+    transform: translateY(-50%); /* จัดตำแหน่งให้รูปอยู่กลางแนวตั้ง */
+}
+
+.w-full {
+    position: relative; /* ให้ .header ซ้อนทับได้ */
+}
+

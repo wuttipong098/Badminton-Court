@@ -4,11 +4,19 @@ import styles from '@/styles/reservation.module.css';
 import Image from "next/image";
 import ball from "@/public/ball.png";
 import { useRouter } from "next/navigation";
-import { FaSearch } from 'react-icons/fa';
-import { FaHeart } from 'react-icons/fa';
-import { useState } from 'react';
+import { FaSearch, FaHeart } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
 
-const badmintonCourts = [
+// กำหนด Interface สำหรับข้อมูลสนาม
+interface Court {
+    id: number;
+    name: string;
+    phone: string;
+    province: string;
+    favorite: boolean;
+}
+
+const badmintonCourts: Court[] = [
     { id: 1, name: "stadium A", phone: "093-xxx-xxxx", province: "นครปฐม", favorite: true },
     { id: 2, name: "stadium B", phone: "093-xxx-xxxx", province: "พะเยา", favorite: false },
     { id: 3, name: "stadium C", phone: "093-xxx-xxxx", province: "สุโขทัย", favorite: false },
@@ -20,25 +28,63 @@ const badmintonCourts = [
 
 const ReservationPage = () => {
     const router = useRouter();
-    const [courts, setCourts] = useState(badmintonCourts);  // ใช้สถานะ courts สำหรับจัดการการเปลี่ยนแปลง
 
-    const toggleFavorite = (id: number) => {
-        setCourts((prevCourts) =>
-            prevCourts.map((court) =>
-                court.id === id ? { ...court, favorite: !court.favorite } : court
-            )
-        );
+    const [courts, setCourts] = useState<Court[]>(badmintonCourts);
+    const [showFavorites, setShowFavorites] = useState(false); // เพิ่มสถานะเพื่อกรอง favorites
+
+    // ฟังก์ชันโหลดข้อมูลจาก localStorage
+    const loadFavoritesFromStorage = () => {
+        if (typeof window !== 'undefined') {
+            const savedCourts = localStorage.getItem('favoriteCourts');
+            if (savedCourts) {
+                try {
+                    const parsedCourts = JSON.parse(savedCourts);
+                    if (Array.isArray(parsedCourts)) {
+                        console.log("Loaded from localStorage:", parsedCourts);
+                        return parsedCourts;
+                    }
+                } catch (error) {
+                    console.error("Failed to parse favoriteCourts:", error);
+                }
+            }
+        }
+        return badmintonCourts;
     };
 
-    const [selectedProvince, setSelectedProvince] = useState('');  // สถานะจังหวัดที่เลือก
+    useEffect(() => {
+        setCourts(loadFavoritesFromStorage());
+    }, []);
+
+    const toggleFavorite = (id: number) => {
+        setCourts((prevCourts) => {
+            const updatedCourts = prevCourts.map((court) =>
+                court.id === id ? { ...court, favorite: !court.favorite } : court
+            );
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('favoriteCourts', JSON.stringify(updatedCourts));
+                console.log("Saved to localStorage:", updatedCourts);
+            }
+            return updatedCourts;
+        });
+    };
+
+    const [selectedProvince, setSelectedProvince] = useState('');
 
     const handleProvinceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedProvince(event.target.value);  // อัปเดตสถานะจังหวัดเมื่อเลือก
+        setSelectedProvince(event.target.value);
     };
 
     const handleStadiumClick = () => {
         router.push("/BadmintonCourt/reservation/stadium");
     };
+
+    // ฟังก์ชันสลับการแสดงเฉพาะ favorites
+    const handleShowFavorites = () => {
+        setShowFavorites((prev) => !prev);
+    };
+
+    // กรองข้อมูลที่จะแสดง
+    const displayedCourts = showFavorites ? courts.filter((court) => court.favorite) : courts;
 
     return (
         <div className={styles.container}>
@@ -68,16 +114,17 @@ const ReservationPage = () => {
                     <option value="chonburi">ชลบุรี</option>
                 </select>
                 <FaHeart
-                    className={styles.heartIcon}
+                    className={showFavorites ? styles.favorite : styles.heartIcon} // เปลี่ยนสีเมื่อกด
                     size={30}
+                    onClick={handleShowFavorites}
+                    style={{ cursor: 'pointer', marginLeft: '10px' }} // เพิ่มระยะห่างและ cursor
                 />
             </div>
-            {/* ตารางสนามแบดมินตัน */}
             <div className="flex flex-col min-h-screen">
                 <div className="flex-grow">
                     <div className={styles.container}>
                         <div className={styles.courtList}>
-                            {courts.map((court) => (
+                            {displayedCourts.map((court) => (
                                 <div key={court.id} className={styles.courtItem}>
                                     <span>{court.id}</span>
                                     <span>{court.name}</span>
@@ -87,7 +134,7 @@ const ReservationPage = () => {
                                     <FaHeart
                                         className={court.favorite ? styles.favorite : styles.notFavorite}
                                         size={30}
-                                        onClick={() => toggleFavorite(court.id)} // เปลี่ยนสถานะเมื่อคลิก
+                                        onClick={() => toggleFavorite(court.id)}
                                     />
                                 </div>
                             ))}
