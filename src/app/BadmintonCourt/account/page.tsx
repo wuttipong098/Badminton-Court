@@ -77,21 +77,16 @@ const AccountPage = () => {
                 </div>
 
                 <div className="w-full max-w-md space-y-4">
-                    {/* User ID */}
                     <div className="flex items-center bg-white p-3 rounded-lg shadow-md">
                         <FaUser className="text-gray-600 mr-3" size={24} />
-                        <span className="text-gray-800 font-medium">000001</span>
+                        <span className="text-gray-800 font-medium">00001</span>
                     </div>
-
-                    {/* Email */}
                     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-md">
                         <div className="flex items-center">
                             <FaEnvelope className="text-gray-600 mr-3" size={24} />
                             <span className="text-gray-800 font-medium">Acenpwk@gmail.com</span>
                         </div>
                     </div>
-
-                    {/* Name */}
                     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-md">
                         <div className="flex items-center w-full">
                             <FaUser className="text-gray-600 mr-3" size={24} />
@@ -124,8 +119,6 @@ const AccountPage = () => {
                             onClick={() => setIsEditingName(!isEditingName)}
                         />
                     </div>
-
-                    {/* Phone */}
                     <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-md">
                         <div className="flex items-center w-full">
                             <FaPhone className="text-gray-600 mr-3" size={24} />
@@ -148,8 +141,6 @@ const AccountPage = () => {
                         />
                     </div>
                 </div>
-
-                {/* Confirm Button - แสดงเฉพาะเมื่อมีการแก้ไข */}
                 {(isEditingName || isEditingPhone) && (
                     <div className="mt-6">
                         <button 

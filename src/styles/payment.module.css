@@ -31,3 +31,48 @@
     position: relative; /* ให้ .header ซ้อนทับได้ */
 }
 
+.QR {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+    background-color: #1F9378;
+    padding: 15px 0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin: -16px -16px 16px -16px; /* ปรับให้ชิดขอบด้านบนและด้านข้าง */
+}
+
+.information1 {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+    background-color: #1F9378;
+    padding: 15px 0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin: -24px -24px 16px -24px; /* ปรับให้ชิดขอบด้านบนและด้านข้าง */
+}
+
+.button {
+    background-color: #379DD6; /* เปลี่ยนสีเป็น #379DD6 */
+    color: white; /* ข้อความสีขาว */
+    padding: 12px 24px; /* ขนาด padding เพื่อให้ปุ่มดูสมส่วน */
+    border: none; /* ไม่มีเส้นขอบ */
+    border-radius: 8px; /* มุมโค้งมน */
+    font-size: 18px; /* ขนาดตัวอักษร */
+    font-weight: 600; /* ความหนาของตัวอักษร */
+    cursor: pointer; /* เปลี่ยนเคอร์เซอร์เป็น pointer เมื่อชี้ */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* เงาเล็กน้อย */
+    transition: background-color 0.3s ease; /* เอฟเฟกต์การเปลี่ยนสีเมื่อ hover */
+}
+
+.button:hover {
+    background-color: #2E87C0; /* สีเข้มขึ้นเล็กน้อยเมื่อ hover */
+}
+
+.button:active {
+    background-color: #2672A9; /* สีเข้มขึ้นอีกเมื่อกด */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* ลดเงาเมื่อกด */
+}

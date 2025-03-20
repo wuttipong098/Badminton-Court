@@ -5,7 +5,6 @@ import Image from "next/image";
 import ball from "@/public/ball.png";
 
 const HistoryPage = () => {
-    // Mock ข้อมูล 5 รายการ
     const bookingData = [
         { date: "15/03/2025", time: "08:00 - 09:00", location: "สนามกีฬากรุงเทพ", court: "สนามที่ 1" },
         { date: "16/03/2025", time: "09:00 - 10:00", location: "สนามกีฬาเชียงใหม่", court: "สนามที่ 2" },
@@ -39,6 +38,7 @@ const HistoryPage = () => {
                     <label className={styles.celltable}>{booking.court}</label>
                 </div>
             ))}
+            <div className="w-full mt-20 h-20 bg-[#1F9378]"></div>
         </div>
     );
 };
