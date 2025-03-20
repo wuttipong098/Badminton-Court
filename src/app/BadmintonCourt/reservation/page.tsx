@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { FaSearch, FaHeart } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 
-// กำหนด Interface สำหรับข้อมูลสนาม
 interface Court {
     id: number;
     name: string;
