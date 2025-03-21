@@ -31,7 +31,6 @@ const ReservationPage = () => {
     const [courts, setCourts] = useState<Court[]>(badmintonCourts);
     const [showFavorites, setShowFavorites] = useState(false); // เพิ่มสถานะเพื่อกรอง favorites
 
-    // ฟังก์ชันโหลดข้อมูลจาก localStorage
     const loadFavoritesFromStorage = () => {
         if (typeof window !== 'undefined') {
             const savedCourts = localStorage.getItem('favoriteCourts');
@@ -77,12 +76,10 @@ const ReservationPage = () => {
         router.push("/BadmintonCourt/reservation/stadium");
     };
 
-    // ฟังก์ชันสลับการแสดงเฉพาะ favorites
     const handleShowFavorites = () => {
         setShowFavorites((prev) => !prev);
     };
 
-    // กรองข้อมูลที่จะแสดง
     const displayedCourts = showFavorites ? courts.filter((court) => court.favorite) : courts;
 
     return (
