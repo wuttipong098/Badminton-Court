@@ -1,0 +1,193 @@
+/* คงส่วนอื่น ๆ ไว้ตามเดิม */
+.container {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.header {
+    padding: 20px;
+    position: relative;
+}
+
+.titleSection {
+    display: flex;
+    flex-direction: column;
+}
+
+.h1 {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.listWrapper {
+    display: flex;
+    align-items: center;
+    margin-top: -18px;
+}
+
+.h2 {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    margin: 0 5px 0 0;
+}
+
+.ball {
+    display: inline-block;
+}
+
+.headernav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    background-color: #ffffff;
+}
+
+.search {
+    position: relative;
+    width: 300px;
+}
+
+.insearch {
+    width: 100%;
+    padding: 10px 10px 10px 40px;
+    font-size: 16px;
+    border: 2px solid #1F9378;
+    border-radius: 8px;
+    outline: none;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #1F9378;
+}
+
+.buttons {
+    background-color: #1F9378;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 5px;
+}
+
+.buttona {
+    background-color: #C5E127;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 5px;
+}
+
+/* ปรับแต่งส่วนตาราง */
+.tableContainer {
+    max-width: 1200px;
+    margin: 40px auto 0;
+    padding: 40px;
+}
+
+.tableHeader {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    color: black;
+    font-weight: bold;
+}
+
+.tableHeader span {
+    flex: 1; /* แบ่งคอลัมน์เท่า ๆ กัน */
+    text-align: left;
+}
+
+/* กล่องสำหรับข้อมูลทั้งหมด */
+.tableRows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* ช่องห่างระหว่างแถว 10px */
+}
+
+/* แต่ละแถว */
+.tableRow {
+    display: flex;
+    align-items: center;
+    background-color: #1F9378;
+    border-radius: 20px; /* ความโค้งของแต่ละแถว */
+    padding: 10px 15px; /* ปรับ padding ให้แถวเล็กลง */
+    min-height: 50px; /* ความสูงขั้นต่ำของแถว */
+}
+
+/* ปรับคอลัมน์ในแถวให้สอดคล้องกับหัวข้อ */
+.tableRow span {
+    flex: 1; /* แบ่งคอลัมน์เท่า ๆ กัน */
+    color: white;
+    text-align: left;
+}
+
+/* ปรับแต่งส่วนสถานะและปุ่ม Dropdown */
+.tableRow div:last-child {
+    flex: 1; /* ให้คอลัมน์สถานะมีขนาดเท่ากับคอลัมน์อื่น ๆ */
+    display: flex;
+    align-items: center;
+}
+
+/* เพิ่มคลาสสำหรับจัดวางสถานะและ Dropdown */
+.statusContainer {
+    display: flex;
+    align-items: center;
+    width: 100%; /* ยืดเต็มความกว้างของคอลัมน์ */
+}
+
+/* ปุ่มสถานะ */
+.statusText {
+    padding: 5px 8px; /* ลด padding เพื่อให้กรอบเล็กลง */
+    border: none;
+    border-radius: 20px; /* ปุ่มกลม */
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center; /* ข้อความในปุ่มอยู่กึ่งกลาง */
+    min-width: 90px; /* กำหนดขนาดให้เท่ากับ "เปิดให้บริการ" */
+    margin-right: auto; /* ชิดซ้ายของคอลัมน์ */
+}
+
+/* สถานะ */
+.statusopen {
+    background-color: #28a745; /* เขียวสำหรับ "เปิดให้บริการ" */
+    color: white;
+}
+
+.statusoff {
+    background-color: #dc3545; /* แดงสำหรับ "ปิดกิจการ" */
+    color: white;
+}
+
+.statedit {
+    background-color: #ffc107; /* เหลืองสำหรับ "ปิดปรับปรุง" */
+    color: white;
+}
+
+/* ปุ่ม Dropdown */
+.dropdownButton {
+    background: none;
+    border: none;
+    color: #D9D9D9;
+    cursor: pointer;
+    font-size: 30px;
+    padding: 0;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

@@ -10,12 +10,15 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const isWebsiteBusiness = pathname.startsWith('/WebsiteBusiness');
 
     return (
         <html lang="en">
             <body>
-                {pathname.startsWith('/BadmintonShop') ? <HeaderShop /> 
-                : pathname !== '/BadmintonCourt/login' && pathname !== '/BadmintonCourt/register' && <Header />}              
+                {!isWebsiteBusiness && (
+                    pathname.startsWith('/BadmintonShop') ? <HeaderShop /> 
+                    : pathname !== '/BadmintonCourt/login' && pathname !== '/BadmintonCourt/register' && <Header />
+                )}
                 <main>{children}</main>
             </body>
         </html>
