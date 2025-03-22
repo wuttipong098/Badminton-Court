@@ -77,27 +77,27 @@ const CourtBooking = () => {
     };
 
     return (
-        <div className="p-4 bg-gray-100 min-h-screen flex flex-col items-center relative">
+        <div className="min-h-screen bg-white p-6 rounded-lg shadow-md mx-auto">
             {message && (
                 <div className="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
                     {message}
                 </div>
             )}
-        
-            <h1 className="text-2xl font-bold mb-4 text-green-700">Badminton Court Booking</h1>
-
-            <button 
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold mb-4 text-green-700">Badminton Court Booking</h1>
+                <button 
                 className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-md font-bold hover:bg-blue-600"
                 onClick={addCourt}
-            >
-                ➕ เพิ่มสนาม
-            </button>
+                >
+                    ➕ เพิ่มสนาม
+                </button>
+            </div>
 
             {courts.length === 0 ? (
                 <p className="text-gray-500">⚠️ ไม่มีสนามที่เปิดให้จอง</p>
             ) : (
                 courts.map((court) => (
-                    <div key={court.id} className="w-full max-w-2xl bg-white rounded-lg shadow-md p-4 mb-4">
+                    <div key={court.id} className="w-full bg-white rounded-lg shadow-md p-4 mb-4">
                         <div className="flex justify-between items-center">
                             <h2
                                 className="text-lg font-semibold text-green-700 cursor-pointer hover:underline"
@@ -112,7 +112,7 @@ const CourtBooking = () => {
                                 ❌ ลบสนาม
                             </button>
                         </div>
-
+                        
                         {/* ✅ Slot จองเวลา (อยู่ภายในสนามที่ถูกต้อง) */}
                         <div className="grid grid-cols-5 gap-2 mt-2">
                             {court.slots.map((isBooked, index) => (
