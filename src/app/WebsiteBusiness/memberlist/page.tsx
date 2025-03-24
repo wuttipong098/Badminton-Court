@@ -19,6 +19,10 @@ const mockMembers = [
 const MemberlistPage = () => {
     const router = useRouter();
 
+    const handleApproveClick = () => {
+        router.push("/WebsiteBusiness/approve");
+    };
+
     return (
         <div className={styles.container}>
             <div className="w-full h-[140px] bg-[#1F9378]">
@@ -45,7 +49,7 @@ const MemberlistPage = () => {
                         <input type="text" className={styles.insearch} placeholder="ชื่อสนามแบดมินตัน" id="stadium" name="stadium" />
                     </div>
                     <button className={styles.buttons}>ค้นหา</button>
-                    <button className={styles.buttona}>approve</button>
+                    <button className={styles.buttona} onClick={handleApproveClick} >approve</button>
                 </div>
             </div>
             <div className={styles.tableContainer}>
@@ -64,10 +68,10 @@ const MemberlistPage = () => {
                             <div className={styles.statusContainer}>
                                 <button
                                     className={`${styles.statusText} ${member.status === "Open for service"
-                                            ? styles.statusopen
-                                            : member.status === "Closed permanently"
-                                                ? styles.statusoff
-                                                : styles.statedit
+                                        ? styles.statusopen
+                                        : member.status === "Closed permanently"
+                                            ? styles.statusoff
+                                            : styles.statedit
                                         }`}
                                 >
                                     {member.status === "Open for service" && "เปิดให้บริการ"}
