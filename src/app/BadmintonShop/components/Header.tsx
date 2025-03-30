@@ -12,8 +12,7 @@ const HeaderShop = () => {
                 <Link href="/BadmintonShop" className="hover:underline">หน้าหลัก</Link>
                 <Link href="/BadmintonShop" className="hover:underline">การจอง</Link>
                 <Link href="/BadmintonShop/approve" className="hover:underline">การอนุมัติ</Link>
-                <Link href="/BadmintonShop" className="hover:underline">ประวัติการจอง</Link>
-                <Link href="/BadmintonShop" className="hover:underline">รายรับ</Link>
+                <Link href="/BadmintonShop/historys" className="hover:underline">ประวัติการจอง</Link>
                 <Link href="/BadmintonShop/booking" className="hover:underline">ตั้งค่าสนาม</Link>
                 <Link href="/BadmintonShop/courtSetting" className="hover:underline">จัดการข้อความสนาม</Link>
                 <Link href="/BadmintonShop/account" className="hover:underline">ข้อมูลของฉัน</Link>

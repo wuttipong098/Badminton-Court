@@ -36,7 +36,7 @@ export default function ApproveBookings() {
 
   return (
     <div className="min-h-screen bg-white p-6 rounded-lg shadow-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-black">Approve Badminton Court Bookings</h1>
+      <h1 className="text-2xl font-bold mb-4 text-black">Approve</h1>
       
       {/* Search Bar */}
       <div className="mb-4 flex gap-2">
