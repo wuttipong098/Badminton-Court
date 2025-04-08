@@ -15,18 +15,6 @@ const CourtBooking = () => {
     const [isSaving, setIsSaving] = useState(false);
     const timeSlots = ["13:00 - 14:00", "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"];
 
-    // ฟังก์ชันเปลี่ยนสถานะการจอง
-    const toggleBooking = (courtId: number, slotIndex: number) => {
-        if (!window.confirm("คุณต้องการเปลี่ยนสถานะการจองใช่หรือไม่?")) return;
-        setCourts(prevCourts =>
-            prevCourts.map(court =>
-                court.id === courtId
-                    ? { ...court, slots: court.slots.map((slot, index) => (index === slotIndex ? !slot : slot)) }
-                    : court
-            )
-        );
-    };
-
     // ฟังก์ชันแจ้งเตือน
     const showMessage = (text: string) => {
         setMessage(text);
@@ -119,7 +107,6 @@ const CourtBooking = () => {
                                 <button
                                     key={index}
                                     className={`px-4 py-2 rounded-md text-white font-bold ${isBooked ? 'bg-red-500' : 'bg-green-500'}`}
-                                    onClick={() => toggleBooking(court.id, index)}
                                 >
                                     {timeSlots[index]}
                                 </button>
