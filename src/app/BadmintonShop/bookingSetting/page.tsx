@@ -19,11 +19,9 @@ const BookingSettings = () => {
     const searchParams = useSearchParams();
     const courtId = searchParams.get("courtId");
     
-    const durations = [30, 60, 90, 120, 150];
     const availableTimes = [
-        "08:00", "09:00", "10:00", "11:00", "12:00",
-        "13:00", "14:00", "15:00", "16:00", "17:00",
-        "18:00", "19:00", "20:00", "21:00", "22:00"
+        "08:00 - 09:00", "10:00 - 11:00", "12:00-13:00", "14:00-15:00", "16:00-17:00",
+        "18:00-19:00", "20:00 - 21:00"
     ];
     
     const toggleTime = (time: string) => {
@@ -50,22 +48,6 @@ const BookingSettings = () => {
                 >
                     กลับไป
                 </button>
-            </div>
-
-            {/* ระยะห่างเวลา */}
-            <div className="mb-4">
-                <label className="block font-medium text-black">ระยะห่างเวลา :</label>
-                <div className="flex gap-2 mt-2">
-                    {durations.map((time) => (
-                        <button
-                            key={time}
-                            className={`px-3 py-2 rounded-lg ${selectedDuration === time ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}
-                            onClick={() => setSelectedDuration(time)}
-                        >
-                            {time} นาที
-                        </button>
-                    ))}
-                </div>
             </div>
 
             {/* วันเริ่มต้น / วันสิ้นสุด */}

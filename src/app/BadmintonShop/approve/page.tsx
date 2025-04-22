@@ -8,9 +8,9 @@ import { Input } from '../components/input';
 const initialBookings = [
   { id: 1, court: '1', name: 'นาย Test Test', times: ['08:00 - 09:00', '09:00 - 10:00'], status: '' },
   { id: 2, court: '3', name: 'นาย C', times: [], status: '' },
-  { id: 3, court: '4', name: 'นาย D', times: [], status: '' },
+  { id: 3, court: '3', name: 'นาย D', times: [], status: '' },
   { id: 4, court: '4', name: 'นาย E', times: [], status: '' },
-  { id: 5, court: '3', name: 'นาย F', times: [], status: '' },
+  { id: 5, court: '4', name: 'นาย F', times: [], status: '' },
 ];
 
 export default function ApproveBookings() {
