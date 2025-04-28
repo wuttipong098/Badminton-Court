@@ -3,8 +3,12 @@
 import styles from '@/styles/reservation.module.css';
 import Image from "next/image";
 import ball from "@/public/ball.png";
+import พรนิมิต1 from "@/public/พรนิมิต1.jpg";
+import พรนิมิต2 from "@/public/พรนิมิต2.jpg";
+import พรนิมิต3 from "@/public/พรนิมิต3.jpg";
+import พรนิมิต4 from "@/public/พรนิมิต4.jpg";
 import { useRouter } from "next/navigation";
-import { FaSearch, FaHeart } from 'react-icons/fa';
+import { FaSearch, FaHeart, FaMapMarkerAlt, FaPhone } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 
 interface Court {
@@ -16,7 +20,7 @@ interface Court {
 }
 
 const badmintonCourts: Court[] = [
-    { id: 1, name: "stadium A", phone: "093-xxx-xxxx", province: "นครปฐม", favorite: true },
+    { id: 1, name: "Pronimit Badminton Court", phone: "081-992-5780", province: "พะเยา", favorite: true },
     { id: 2, name: "stadium B", phone: "093-xxx-xxxx", province: "พะเยา", favorite: false },
     { id: 3, name: "stadium C", phone: "093-xxx-xxxx", province: "สุโขทัย", favorite: false },
     { id: 4, name: "stadium D", phone: "093-xxx-xxxx", province: "สุโขทัย", favorite: false },
@@ -29,7 +33,7 @@ const ReservationPage = () => {
     const router = useRouter();
 
     const [courts, setCourts] = useState<Court[]>(badmintonCourts);
-    const [showFavorites, setShowFavorites] = useState(false); // เพิ่มสถานะเพื่อกรอง favorites
+    const [showFavorites, setShowFavorites] = useState(false);
 
     const loadFavoritesFromStorage = () => {
         if (typeof window !== 'undefined') {
@@ -108,12 +112,13 @@ const ReservationPage = () => {
                     <option value="bangkok">กรุงเทพมหานคร</option>
                     <option value="chiangmai">เชียงใหม่</option>
                     <option value="chonburi">ชลบุรี</option>
+                    <option value="phayao">พะเยา</option>
                 </select>
                 <FaHeart
-                    className={showFavorites ? styles.favorite : styles.heartIcon} // เปลี่ยนสีเมื่อกด
+                    className={showFavorites ? styles.favorite : styles.heartIcon}
                     size={30}
                     onClick={handleShowFavorites}
-                    style={{ cursor: 'pointer', marginLeft: '10px' }} // เพิ่มระยะห่างและ cursor
+                    style={{ cursor: 'pointer', marginLeft: '10px' }}
                 />
             </div>
             <div className="flex flex-col min-h-screen">
@@ -121,17 +126,72 @@ const ReservationPage = () => {
                     <div className={styles.container}>
                         <div className={styles.courtList}>
                             {displayedCourts.map((court) => (
-                                <div key={court.id} className={styles.courtItem}>
-                                    <span>{court.id}</span>
-                                    <span>{court.name}</span>
-                                    <span>{court.phone}</span>
-                                    <span>{court.province}</span>
-                                    <button className={styles.selectButton} onClick={handleStadiumClick}>เลือก</button>
+                                <div key={court.id} className={`${styles.courtItem} bg-[#1F9378] p-4 rounded-lg shadow-md flex flex-row relative mb-5`}>
+                                    {/* รูปหัวใจมุมขวาบน */}
                                     <FaHeart
                                         className={court.favorite ? styles.favorite : styles.notFavorite}
                                         size={30}
                                         onClick={() => toggleFavorite(court.id)}
+                                        style={{ position: 'absolute', top: '10px', right: '10px' }}
                                     />
+                                    {/* ฝั่งซ้าย: รูปภาพหลักและรูปภาพย่อย */}
+                                    <div className="flex flex-col flex-shrink-0 mr-4">
+                                        <Image
+                                            src={court.id === 1 ? พรนิมิต1 : พรนิมิต1}
+                                            alt="Court Image"
+                                            width={300}
+                                            height={200}
+                                            className="rounded-lg"
+                                        />
+                                        {/* รูปภาพย่อย 3 รูป (ปรับขอบซ้ายให้ตรงกับรูปใหญ่) */}
+                                        <div className="flex space-x-2 mt-2 ml-0">
+                                            <Image
+                                                src={court.id === 1 ? พรนิมิต2 : พรนิมิต2}
+                                                alt="Court Image 1"
+                                                width={90}
+                                                height={60}
+                                                className="rounded-lg"
+                                            />
+                                            <Image
+                                                src={court.id === 1 ? พรนิมิต3 : พรนิมิต3}
+                                                alt="Court Image 2"
+                                                width={90}
+                                                height={60}
+                                                className="rounded-lg"
+                                            />
+                                            <Image
+                                                src={court.id === 1 ? พรนิมิต4 : พรนิมิต4}
+                                                alt="Court Image 3"
+                                                width={90}
+                                                height={60}
+                                                className="rounded-lg"
+                                            />
+                                        </div>
+                                    </div>
+                                    {/* ฝั่งขวา: ข้อมูลสนาม */}
+                                    <div className="flex flex-col flex-grow">
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white mt-0">สนามแบดมินตัน พรนิมิต</h3>
+                                            <h4 className="text-xl font-semibold text-white mt-1">{court.name}</h4>
+                                            <p className="text-white flex items-center mt-1">
+                                                <FaMapMarkerAlt className="mr-2 text-red-500" />
+                                                หมู่ที่ 3 ตำบล ท่าตาล อำเภอ เมือง พะเยา, Phayao, Thailand, Phayao
+                                            </p>
+                                            <p className="text-white mt-1">รหัสไปรษณีย์: 56000</p>
+                                            <p className="text-white flex items-center mt-1">
+                                                <FaPhone className="mr-2 text-red-500" />
+                                                {court.phone}
+                                            </p>
+                                            <p className="text-white mt-1">จำนวนคอร์ด: คอร์ดมาตรฐาน 4 คอร์ด</p>
+                                        </div>
+                                        {/* ปุ่มเลือก */}
+                                        <button
+                                            className={`${styles.selectButton} bg-white text-[#1F9378] px-4 py-2 rounded-lg mt-4 self-start`}
+                                            onClick={handleStadiumClick}
+                                        >
+                                            เลือก
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
