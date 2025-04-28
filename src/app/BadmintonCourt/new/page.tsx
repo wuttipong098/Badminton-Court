@@ -10,11 +10,10 @@ const MainPage = () => {
             {/* พื้นหลังด้านบนเอียง */}
             <div className="absolute top-0 left-0 w-full h-60 bg-[#1F9378] skew-y-[-6deg] origin-top-left"></div>
             {/* Header */}
-            <div className="text-left w-full max-w-lg text-white relative z-10 p-6 mt-[-60px]">
+            <div className="absolute top-[60px] left-0 text-left w-full max-w-lg text-white z-10 p-6">
                 <h1 className="text-3xl font-bold">Badminton</h1>
                 <h2 className="text-3xl font-semibold">CourtBooking</h2>
             </div>
-
 
             {/* ภาพขนไก่ */}
             <div className="absolute top-6 right-6 z-10">
@@ -28,28 +27,32 @@ const MainPage = () => {
                     <Image src={court} alt="Badminton Court" width={250} height={100} />
                 </div>
 
-                {/* ข้อความ 1 (อยู่ตรงกลาง) */}
-                <div className="relative z-10 p-6 self-start mt-15 max-w-lg w-full mx-auto">
-                    <label className="text-xl font-bold text-[#1F9378] block">
-                        ยินดีต้อนรับสู่เว็บไซต์จองสนาม
-                    </label>
-                    <label className="text-xl font-bold text-[#1F9378] block">
-                        แบดมินตัน
-                    </label>
-                    <div className="relative z-10 text-left mt-6 text-lg font-medium pl-6">
-                        <label className="block">วันนี้สนามแบดมินตันของเรา</label>
-                        <label className="text-red-600 font-bold">
-                            เปิดให้บริการแล้ว<span className="text-black font-medium"> ครับ/ค่ะ</span>
-                        </label>
+                {/* Pagination และกรอบสีเทา */}
+                <div className="relative z-10 p-6 self-start mt-25 max-w-lg w-full mx-auto flex flex-col items-center">
+                    {/* กรอบสี่เหลี่ยมสีเทาด้านบน */}
+                    <div className="w-full h-96 bg-gray-200 rounded-lg mb-4"></div>
+                    
+                    {/* ปุ่มตัวเลข 1-9 */}
+                    <div className="flex space-x-2">
+                        {[...Array(9)].map((_, index) => (
+                            <button
+                                key={index}
+                                className="w-10 h-10 rounded-lg bg-[#1F9378] text-white font-bold flex items-center justify-center hover:bg-[#167A63] transition"
+                            >
+                                {index + 1}
+                            </button>
+                        ))}
+                        <button className="w-10 h-10 rounded-lg bg-[#1F9378] text-white font-bold flex items-center justify-center hover:bg-[#167A63] transition">
+                            ...
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* พื้นหลังด้านล่างตรง */}
-            <div className="absolute bottom-0 left-0 w-full h-15 bg-[#1F9378]"></div>
+            <div className="absolute bottom-[-16px] left-0 w-full h-15 bg-[#1F9378]"></div>
         </div>
     );
 };
 
 export default MainPage;
-
