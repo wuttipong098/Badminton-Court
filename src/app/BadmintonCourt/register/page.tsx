@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import logo from "@/public/logo.png";
+import logouser from "@/public/user.png"
+import logoowner from "@/public/owner.png"
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 const RegisterPage = () => {
