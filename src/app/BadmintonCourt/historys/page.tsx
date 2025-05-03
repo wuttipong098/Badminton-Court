@@ -1,17 +1,38 @@
-"use client"; 
+"use client";
 
 import styles from '@/styles/historys.module.css';
 import Image from "next/image";
 import ball from "@/public/ball.png";
+import { useState, useEffect } from "react";
+import { SearchAccountParams } from "@/dto/request/historys";
+import { historys } from "@/dto/response/historys";
 
 const HistoryPage = () => {
-    const bookingData = [
-        { date: "15/03/2025", time: "08:00 - 09:00", location: "สนามกีฬากรุงเทพ", court: "สนามที่ 1" },
-        { date: "16/03/2025", time: "09:00 - 10:00", location: "สนามกีฬาเชียงใหม่", court: "สนามที่ 2" },
-        { date: "17/03/2025", time: "10:00 - 11:00", location: "สนามกีฬาพัทยา", court: "สนามที่ 3" },
-        { date: "18/03/2025", time: "13:00 - 14:00", location: "สนามกีฬาหัวหิน", court: "สนามที่ 4" },
-        { date: "19/03/2025", time: "15:00 - 16:00", location: "สนามกีฬาภูเก็ต", court: "สนามที่ 5" },
-    ];
+    const [data, setData] = useState<historys[]>([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch('/api/historys', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({} as SearchAccountParams),
+                });
+                const result = await response.json();
+                if (result.status_code === 200) {
+                    setData(result.data);
+                } else {
+                    console.error('Failed to fetch data:', result.status_message);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     return (
         <div className={styles.container}>
@@ -30,12 +51,12 @@ const HistoryPage = () => {
                 <label className={styles.headtable}>ชื่อสถานที่</label>
                 <label className={styles.headtable}>สนามที่จอง</label>
             </div>
-            {bookingData.map((booking, index) => (
+            {data.map((booking, index) => (
                 <div key={index} className={styles.rowtable}>
-                    <label className={styles.celltable}>{booking.date}</label>
-                    <label className={styles.celltable}>{booking.time}</label>
-                    <label className={styles.celltable}>{booking.location}</label>
-                    <label className={styles.celltable}>{booking.court}</label>
+                    <label className={styles.celltable}>{booking.BookingDate}</label>
+                    <label className={styles.celltable}>{`${booking.StartTime} - ${booking.EndTime}`}</label>
+                    <label className={styles.celltable}>{booking.StadiumName}</label>
+                    <label className={styles.celltable}>{`สนามที่ ${booking.CourtNumber}`}</label>
                 </div>
             ))}
             <div className="w-full mt-20 h-20 bg-[#1F9378]"></div>

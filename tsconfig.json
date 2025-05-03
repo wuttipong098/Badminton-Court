@@ -13,6 +13,8 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "experimentalDecorators": true, // เพิ่มการตั้งค่านี้
+    "emitDecoratorMetadata": true, // เพิ่มการตั้งค่านี้
     "plugins": [
       {
         "name": "next"

@@ -182,7 +182,7 @@ const ReservationPage = () => {
                                                 <FaPhone className="mr-2 text-red-500" />
                                                 {court.phone}
                                             </p>
-                                            <p className="text-white mt-1">จำนวนคอร์ด: คอร์ดมาตรฐาน 4 คอร์ด</p>
+                                            <p className="text-white mt-1">จำนวนสนาม : 4 สนาม</p>
                                         </div>
                                         {/* ปุ่มเลือก */}
                                         <button
