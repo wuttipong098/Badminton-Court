@@ -10,11 +10,11 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(""); 
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    setErrorMessage(""); 
+    setErrorMessage("");
 
     try {
       const response = await fetch("/api/login", {
@@ -28,13 +28,20 @@ const LoginPage = () => {
       const result = await response.json();
 
       if (result.status_code === 200) {
+        if (!result.UserID) {
+          console.error("Missing UserID", result);
+          setErrorMessage("ข้อมูลผู้ใช้ไม่ครบถ้วน");
+          return;
+        }
 
-        router.push(result.redirectPath);
+        localStorage.setItem("userID", result.UserID.toString());
+
+        router.push(result.redirectPath || "/");
       } else {
-
         setErrorMessage(result.status_message);
       }
     } catch (error) {
+      console.error("Error during login:", error);
       setErrorMessage("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
     }
   };
@@ -73,7 +80,6 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              {/* ปุ่มเปิด-ปิดตา (แสดงเฉพาะเมื่อมีการกรอกรหัสผ่าน) */}
               {password.length > 0 && (
                 <button
                   type="button"
@@ -85,7 +91,6 @@ const LoginPage = () => {
               )}
             </div>
 
-            {/* แสดงข้อความข้อผิดพลาด */}
             {errorMessage && (
               <div className="mb-3 text-red-200 text-sm">{errorMessage}</div>
             )}

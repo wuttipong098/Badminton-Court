@@ -1,7 +1,6 @@
 import { getDbConnection } from '../db_connection';
 import { user } from '../entity';
 import { CreateAccountParams } from '@/dto/request/register';
-import { LoginParams } from '@/dto/request/login';
 
 export const insertUser = async (params: CreateAccountParams) => {
   return await getDbConnection(async (manager) => {
@@ -37,31 +36,6 @@ export const insertUser = async (params: CreateAccountParams) => {
 export const findUserByUsername = async (username: string) => {
   return await getDbConnection(async (manager) => {
     return await manager.findOne(user, { where: { user_name: username } });
-  });
-};
-
-export const findUserById = async (userId: number) => {
-  return await getDbConnection(async (manager) => {
-    const userData = await manager.findOne(user, { where: { user_id: userId } });
-    if (!userData) {
-      return null;
-    }
-    return {
-      UserID: userData.user_id,
-      UserName: userData.user_name,
-      FirstName: userData.first_name,
-      LastName: userData.last_name,
-      RoleName: userData.role_name,
-      PhoneNumber: userData.phone_number,
-      Profile: userData.profile ? userData.profile.toString('base64') : undefined,
-    };
-  });
-};
-
-export const loginUser = async (params: LoginParams) => {
-  return await getDbConnection(async (manager) => {
-    const userData = await manager.findOne(user, { where: { user_name: params.UserName } });
-    return userData;
   });
 };
 
