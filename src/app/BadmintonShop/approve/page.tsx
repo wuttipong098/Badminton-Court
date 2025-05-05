@@ -6,11 +6,11 @@ import { Card, CardContent } from '../components/card';
 import { Input } from '../components/input';
 
 const initialBookings = [
-  { id: 1, court: '1', name: 'นาย Test Test', times: ['08:00 - 09:00', '09:00 - 10:00'], status: '' },
-  { id: 2, court: '3', name: 'นาย C', times: [], status: '' },
-  { id: 3, court: '3', name: 'นาย D', times: [], status: '' },
-  { id: 4, court: '4', name: 'นาย E', times: [], status: '' },
-  { id: 5, court: '4', name: 'นาย F', times: [], status: '' },
+  { id: 1, court: '1', name: 'นาย Test Test', times: ['08:00 - 09:00', '09:00 - 10:00'], status: '', paymentStatus: 'paid', slipUrl: '/public/moneyslip.jpg' },
+  { id: 2, court: '3', name: 'นาย C', times: [], status: '', paymentStatus: 'unpaid', slipUrl: '' },
+  { id: 3, court: '3', name: 'นาย D', times: [], status: '', paymentStatus: 'paid', slipUrl: '/slips/slip3.jpg' },
+  { id: 4, court: '4', name: 'นาย E', times: [], status: '', paymentStatus: 'unpaid', slipUrl: '' },
+  { id: 5, court: '4', name: 'นาย F', times: [], status: '', paymentStatus: 'paid', slipUrl: '/slips/slip5.jpg' },
 ];
 
 export default function ApproveBookings() {
@@ -18,11 +18,11 @@ export default function ApproveBookings() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredBookings, setFilteredBookings] = useState(initialBookings);
 
-  const handleApprove = (id:number) => {
+  const handleApprove = (id: number) => {
     setBookings(bookings.map(b => b.id === id ? { ...b, status: 'approved' } : b));
   };
 
-  const handleReject = (id:number) => {
+  const handleReject = (id: number) => {
     setBookings(bookings.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
   };
 
@@ -34,22 +34,30 @@ export default function ApproveBookings() {
     );
   };
 
+  const handleViewSlip = (url: string) => {
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      alert('ไม่มีสลิปการโอนเงิน');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white p-6 rounded-lg shadow-md mx-auto">
       <h1 className="text-2xl font-bold mb-4 text-black">Approve</h1>
-      
+
       {/* Search Bar */}
       <div className="mb-4 flex gap-2">
         <Input
           type="text"
-          placeholder="สนามที่,ชื่อคนจองสนาม"
+          placeholder="สนามที่, ชื่อคนจอง"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="border p-2 rounded flex-1 text-black"
         />
         <Button onClick={handleSearch} className="bg-green-500">ค้นหา</Button>
       </div>
-      
+
       {/* Booking List */}
       <Card>
         <CardContent>
@@ -57,8 +65,10 @@ export default function ApproveBookings() {
             <thead>
               <tr className="bg-gray-200">
                 <th className="p-2 border">สนามที่</th>
-                <th className="p-2 border">ชื่อคนจองสนาม</th>
+                <th className="p-2 border">ชื่อคนจอง</th>
                 <th className="p-2 border">เวลาจอง</th>
+                <th className="p-2 border">สถานะจ่ายเงิน</th>
+                <th className="p-2 border">ดูสลิป</th>
                 <th className="p-2 border">จัดการ</th>
               </tr>
             </thead>
@@ -72,6 +82,22 @@ export default function ApproveBookings() {
                       booking.times.map((time, i) => (
                         <div key={i} className="bg-red-500 text-white p-1 rounded mb-1 inline-block">{time}</div>
                       ))
+                    ) : (
+                      <span>-</span>
+                    )}
+                  </td>
+                  <td className="p-2 border text-center">
+                    {booking.paymentStatus === 'paid' ? (
+                      <span className="text-green-600 font-semibold">จ่ายแล้ว</span>
+                    ) : (
+                      <span className="text-red-600 font-semibold">ยังไม่จ่าย</span>
+                    )}
+                  </td>
+                  <td className="p-2 border text-center">
+                    {booking.slipUrl ? (
+                      <Button onClick={() => handleViewSlip(booking.slipUrl)} className="bg-purple-500">
+                        ดูสลิป
+                      </Button>
                     ) : (
                       <span>-</span>
                     )}

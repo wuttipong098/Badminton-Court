@@ -1,132 +1,118 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+interface CourtItem {
+  stadiumId: number;
+  courtId: number;
+  slots: boolean[];
+  timeSlots: string[];
+}
+
 const CourtBooking = () => {
-    const router = useRouter();
-    const initialCourts = [
-        { id: 1, slots: [false, false, false, false, false] },
-        { id: 2, slots: [true, false, false, false, false] },
-    ];
+  const router = useRouter();
+  const [courts, setCourts] = useState<CourtItem[]>([]);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const [message, setMessage] = useState("");
 
-    const [courts, setCourts] = useState(initialCourts);
-    const [message, setMessage] = useState(""); 
-    const [isSaving, setIsSaving] = useState(false);
-    const timeSlots = ["13:00 - 14:00", "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"];
+  const showMessage = (text: string) => {
+    setMessage(text);
+    setTimeout(() => setMessage(""), 2000);
+  };
 
-    // ฟังก์ชันแจ้งเตือน
-    const showMessage = (text: string) => {
-        setMessage(text);
-        setTimeout(() => setMessage(""), 2000);
-    };
-
-    // ฟังก์ชันเพิ่มสนาม
-    const addCourt = () => {
-        if (courts.length >= 5) {
-            showMessage("⚠️ สนามเต็มแล้ว!");
-            return;
+  useEffect(() => {
+    const fetchCourtData = async () => {
+      try {
+        const res = await fetch("/api/BS/getCourtData");
+        const result = await res.json();
+        if (result.success) {
+          setCourts(result.data.courts.sort((a: CourtItem, b: CourtItem) => a.courtId - b.courtId));
+          setTimeSlots(result.data.timeSlots);
+        } else {
+          showMessage("⚠️ โหลดข้อมูลไม่สำเร็จ");
         }
-        const newCourt = {
-            id: courts.length > 0 ? courts[courts.length - 1].id + 1 : 1,
-            slots: Array(5).fill(false),
-        };
-        setCourts([...courts, newCourt]);
+      } catch (error) {
+        console.error("❌ โหลดข้อมูลล้มเหลว", error);
+        showMessage("❌ โหลดข้อมูลล้มเหลว!");
+      }
     };
 
-    // ฟังก์ชันลบสนาม
-    const removeCourt = (courtId: number) => {
-        if (!window.confirm(`⚠️ คุณต้องการลบสนามที่ ${courtId} ใช่หรือไม่?`)) return;
-        setCourts(prevCourts => prevCourts.filter(court => court.id !== courtId));
-        showMessage(`❌ ลบสนามที่ ${courtId} สำเร็จ`);
-    };
+    fetchCourtData();
+  }, []);
 
-    // ฟังก์ชันบันทึกข้อมูล
-    const saveToDatabase = async () => {
-        if (courts.length === 0) {
-            showMessage("⚠️ ไม่มีสนามให้บันทึก!");
-            return;
-        }
+  const handleAddCourt = () => {
+    router.push("/BadmintonShop/bookingSetting");
+  };
 
-        setIsSaving(true);
-        try {
-            console.log("📥 ส่งข้อมูลไปยัง Database:", courts);
-            await fetch("/api/saveCourts", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ courts }),
-            });
-            showMessage("✅ บันทึกข้อมูลสำเร็จ!");
-        } catch (error) {
-            console.error("❌ บันทึกไม่สำเร็จ", error);
-            showMessage("❌ บันทึกข้อมูลล้มเหลว!");
-        }
-        setIsSaving(false);
-    };
+  const removeCourt = async (stadiumId: number, courtId: number) => {
+    if (!window.confirm(`⚠️ คุณต้องการลบคอร์ทที่ ${courtId} ใช่หรือไม่?`)) return;
+    try {
+      await fetch(`/api/BS/deleteCourt?stadiumId=${stadiumId}&courtId=${courtId}`, { method: "DELETE" });
+  
+      setCourts(prev => prev.filter(c => c.courtId !== courtId || c.stadiumId !== stadiumId));
+      showMessage(`❌ ลบคอร์ทที่ ${courtId} สำเร็จ`);
+    } catch (error) {
+      console.error("❌ ลบคอร์ทไม่สำเร็จ", error);
+      showMessage("❌ ลบคอร์ทล้มเหลว!");
+    }
+  };
 
-    return (
-        <div className="min-h-screen bg-white p-6 rounded-lg shadow-md mx-auto">
-            {message && (
-                <div className="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-                    {message}
-                </div>
-            )}
-            <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold mb-4 text-green-700">Badminton Court Booking</h1>
-                <button 
-                className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-md font-bold hover:bg-blue-600"
-                onClick={addCourt}
-                >
-                    ➕ เพิ่มสนาม
-                </button>
+  return (
+    <div className="min-h-screen bg-white p-6 rounded-lg shadow-md mx-auto">
+      {message && (
+        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {message}
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-green-700">Badminton Court Booking</h1>
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded-md font-bold hover:bg-blue-600"
+          onClick={handleAddCourt}
+        >
+          ➕ เพิ่มสนาม
+        </button>
+      </div>
+
+      {courts.length === 0 ? (
+        <p className="text-gray-500">⚠️ ไม่มีคอร์ทที่เปิดให้จอง</p>
+      ) : (
+        courts.map((court) => (
+          <div key={court.courtId} className="bg-white rounded-lg shadow-md p-4 mb-4">
+            <div className="flex justify-between items-center">
+              <h2
+                className="text-lg font-semibold text-green-700 cursor-pointer hover:underline"
+                onClick={() => router.push(`/BadmintonShop/bookingSetting?courtId=${court.courtId}`)}
+              >
+                สนามที่ {court.courtId}
+              </h2>
+              <button
+                className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
+                onClick={() => removeCourt(court.stadiumId, court.courtId)}
+              >
+                ❌ ลบคอร์ท
+              </button>
             </div>
 
-            {courts.length === 0 ? (
-                <p className="text-gray-500">⚠️ ไม่มีสนามที่เปิดให้จอง</p>
-            ) : (
-                courts.map((court) => (
-                    <div key={court.id} className="w-full bg-white rounded-lg shadow-md p-4 mb-4">
-                        <div className="flex justify-between items-center">
-                            <h2
-                                className="text-lg font-semibold text-green-700 cursor-pointer hover:underline"
-                                onClick={() => router.push(`/BadmintonShop/bookingSetting?courtId=${court.id}`)}
-                            >
-                                สนามที่ {court.id}
-                            </h2>
-                            <button 
-                                className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"
-                                onClick={() => removeCourt(court.id)}
-                            >
-                                ❌ ลบสนาม
-                            </button>
-                        </div>
-                        
-                        {/* ✅ Slot จองเวลา (อยู่ภายในสนามที่ถูกต้อง) */}
-                        <div className="grid grid-cols-5 gap-2 mt-2">
-                            {court.slots.map((isBooked, index) => (
-                                <button
-                                    key={index}
-                                    className={`px-4 py-2 rounded-md text-white font-bold ${isBooked ? 'bg-red-500' : 'bg-green-500'}`}
-                                >
-                                    {timeSlots[index]}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                ))
-            )}
-
-            <button 
-                className={`mt-4 px-6 py-2 rounded-md font-bold transition duration-300 ${
-                    isSaving ? "bg-gray-500 cursor-not-allowed" : "bg-green-700 hover:bg-green-800 text-white"
+            <div className="grid grid-cols-5 gap-2 mt-2">
+            {court.slots.map((isBooked, index) => (
+              <button
+                key={index}
+                className={`px-4 py-2 rounded-md text-white font-bold ${
+                  isBooked ? "bg-red-500" : "bg-green-500"
                 }`}
-                onClick={saveToDatabase}
-                disabled={isSaving}
-            >
-                {isSaving ? "⏳ กำลังบันทึก..." : "💾 บันทึกการจอง"}
-            </button>
-        </div>
-    );
+              >
+                {court.timeSlots[index] || `ช่วงที่ ${index + 1}`}
+              </button>
+            ))}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
 };
 
 export default CourtBooking;
