@@ -4,9 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import logo from "@/public/logo.png";
-import logouser from "@/public/user.png"
-import logoowner from "@/public/owner.png"
+import logouser from "@/public/user.png";
+import logoowner from "@/public/owner.png";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+
+const MySwal = withReactContent(Swal);
 
 const RegisterPage = () => {
     const router = useRouter();
@@ -19,76 +23,164 @@ const RegisterPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
+    const [role, setRole] = useState<"user" | "owner" | null>(null);
 
-    const handleSubmit = (e: { preventDefault: () => void }) => {
+    const handleRoleSelect = (selectedRole: "user" | "owner") => {
+        if (selectedRole === "owner") {
+            router.push("/BadmintonShop/register"); 
+        } else {
+            setRole(selectedRole); 
+        }
+    };
+
+    const handleSubmit = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
         if (password !== confirmPassword) {
             setPasswordError(true);
+            MySwal.fire({
+                icon: 'error',
+                title: 'ข้อผิดพลาด',
+                text: 'รหัสผ่านไม่ตรงกัน',
+                confirmButtonColor: '#d33',
+            });
+            return;
+        }
+        if (!role) {
+            MySwal.fire({
+                icon: 'warning',
+                title: 'กรุณาเลือกบทบาท',
+                text: 'กรุณาเลือกบทบาท (ผู้เล่น)',
+                confirmButtonColor: '#3085d6',
+            });
             return;
         }
         setPasswordError(false);
-        router.push("/BadmintonCourt/login");
+
+        // เตรียมข้อมูลสำหรับส่งไปยัง API
+        const formData = {
+            FirstName: firstname,
+            LastName: lastname,
+            UserName: username,
+            Password: password,
+            PhoneNumber: phonenumber,
+            RoleName: role,
+        };
+
+        try {
+            // ส่งข้อมูลไปยัง API endpoint
+            const response = await fetch("/api/register", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status_code === 200) {
+                // หากสำเร็จ แสดง SweetAlert และเปลี่ยนเส้นทางไปยังหน้า login
+                await MySwal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ!',
+                    text: 'สร้างบัญชีสำเร็จ',
+                    confirmButtonColor: '#3085d6',
+                });
+                router.push("/BadmintonCourt/login");
+            } else {
+                // แสดงข้อความข้อผิดพลาดจาก API
+                MySwal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาด',
+                    text: result.status_message || 'เกิดข้อผิดพลาดในการสร้างบัญชี',
+                    confirmButtonColor: '#d33',
+                });
+            }
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            MySwal.fire({
+                icon: 'error',
+                title: 'ข้อผิดพลาด',
+                text: 'เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์',
+                confirmButtonColor: '#d33',
+            });
+        }
     };
 
     return (
         <div className="flex justify-center items-center h-screen bg-gray-300">
-            <div className="flex w-[700px] h-[450px] bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="w-3/5 bg-[#1F9378] flex flex-col justify-center items-center p-6">
+            <div className="flex w-[700px] h-[500px] bg-white rounded-xl shadow-lg overflow-hidden">
+                <div className="w-3/5 bg-[#1F9378] flex flex-col justify-center items-center p-6 rounded-lg">
                     <h1 className="text-white text-2xl mb-5">สร้างบัญชีของคุณ</h1>
                     <form className="w-full px-8" onSubmit={handleSubmit}>
-                        <div className="mb-3 flex gap-3">
+                        <div className="flex justify-center gap-2 mb-4">
+                            <div className="flex flex-col items-center">
+                                <div
+                                    className={`flex flex-col items-center bg-white rounded-lg p-2 cursor-pointer ${role === "user" ? "border-4 border-yellow-400" : ""}`}
+                                    onClick={() => handleRoleSelect("user")}
+                                >
+                                    <Image src={logouser} alt="User Icon" width={50} height={50} />
+                                </div>
+                                <p className="text-white text-[10px] mt-1">ผู้เล่น</p>
+                            </div>
+                            <div className="flex flex-col items-center">
+                                <div
+                                    className={`flex flex-col items-center bg-white rounded-lg p-2 cursor-pointer ${role === "owner" ? "border-4 border-yellow-400" : ""}`}
+                                    onClick={() => handleRoleSelect("owner")}
+                                >
+                                    <Image src={logoowner} alt="Owner Icon" width={45} height={30} />
+                                </div>
+                                <p className="text-white text-[10px] mt-1">เจ้าของสนาม</p>
+                            </div>
+                        </div>
+                        <div className="mb-2 flex gap-2">
                             <input
                                 type="text"
                                 placeholder="ชื่อ"
-                                className="w-1/2 p-2 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="w-1/2 p-1.5 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
                                 value={firstname}
                                 onChange={(e) => setFirstname(e.target.value)}
                             />
                             <input
                                 type="text"
                                 placeholder="นามสกุล"
-                                className="w-1/2 p-2 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="w-1/2 p-1.5 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
                                 value={lastname}
                                 onChange={(e) => setLastname(e.target.value)}
                             />
                         </div>
-
-                        <div className="mb-3">
+                        <div className="mb-2">
                             <input
                                 type="text"
                                 placeholder="อีเมล"
-                                className="w-full p-2 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="w-full p-1.5 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                             />
                         </div>
-
-                        {/* รหัสผ่าน */}
-                        <div className="mb-3 relative">
+                        <div className="mb-2 relative">
                             <input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="รหัสผ่าน"
-                                className="w-full p-2 pr-10 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="w-full p-1.5 pr-8 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                             {password.length > 0 && (
                                 <button
                                     type="button"
-                                    className="absolute right-3 top-3 text-gray-600 hover:text-gray-800"
+                                    className="absolute right-2 top-2.5 text-gray-600 hover:text-gray-800"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    {showPassword ? <EyeOffIcon size={15} /> : <EyeIcon size={15} />}
+                                    {showPassword ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />}
                                 </button>
                             )}
                         </div>
-
-                        {/* ยืนยันรหัสผ่าน */}
-                        <div className="mb-3 relative">
+                        <div className="mb-2 relative">
                             <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="ยืนยันรหัสผ่าน"
-                                className={`w-full p-2 pr-10 bg-gray-200 text-gray-800 border ${passwordError ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500`}
+                                className={`w-full p-1.5 pr-8 bg-gray-200 text-gray-800 border ${passwordError ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm`}
                                 value={confirmPassword}
                                 onChange={(e) => {
                                     setConfirmPassword(e.target.value);
@@ -98,39 +190,41 @@ const RegisterPage = () => {
                             {confirmPassword.length > 0 && (
                                 <button
                                     type="button"
-                                    className="absolute right-3 top-3 text-gray-600 hover:text-gray-800"
+                                    className="absolute right-2 top-2.5 text-gray-600 hover:text-gray-800"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                 >
-                                    {showConfirmPassword ? <EyeOffIcon size={15} /> : <EyeIcon size={15} />}
+                                    {showConfirmPassword ? <EyeOffIcon size={12} /> : <EyeIcon size={12} />}
                                 </button>
                             )}
                             {passwordError && (
-                                <p className="text-white text-sm font-bold mt-1" style={{ textShadow: "2px 2px 0px #b91c1c, -2px -2px 0px #b91c1c, 2px -2px 0px #b91c1c, -2px 2px 0px #b91c1c" }}>
+                                <p
+                                    className="text-white text-xs font-bold mt-1"
+                                    style={{
+                                        textShadow:
+                                            "2px 2px 0px #b91c1c, -2px -2px 0px #b91c1c, 2px -2px 0px #b91c1c, -2px 2px 0px #b91c1c",
+                                    }}
+                                >
                                     รหัสผ่านไม่ตรงกัน
                                 </p>
                             )}
                         </div>
-
-                        <div className="mb-3">
+                        <div className="mb-2">
                             <input
                                 type="text"
                                 placeholder="เบอร์"
-                                className="w-full p-2 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                className="w-full p-1.5 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
                                 value={phonenumber}
                                 onChange={(e) => setPhonenumber(e.target.value)}
                             />
                         </div>
-
                         <button
                             type="submit"
-                            className="w-full py-2 bg-[#3498db] text-white text-lg font-semibold rounded-lg shadow-md hover:bg-[#2980b9] transition cursor-pointer"
+                            className="w-full py-1.5 bg-[#3498db] text-white text-base font-semibold rounded-lg shadow-md hover:bg-[#2980b9] transition cursor-pointer"
                         >
                             ยืนยัน
                         </button>
                     </form>
                 </div>
-
-                {/* รูปภาพย้ายไปขวา */}
                 <div className="w-2/5 flex items-center justify-center bg-white">
                     <Image src={logo} alt="Badminton Court Logo" width={150} height={150} />
                 </div>
