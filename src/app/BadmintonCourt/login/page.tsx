@@ -2,22 +2,44 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { EyeIcon, EyeOffIcon } from "lucide-react"; // ใช้ไอคอนจาก Lucide
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import logo from "@/public/logo.png";
 
 const LoginPage = () => {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // สถานะเปิด-ปิดตา
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(""); 
 
-  const handleSubmit = (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    router.push("/BadmintonCourt/new");
+    setErrorMessage(""); 
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ UserName: username, Password: password }),
+      });
+
+      const result = await response.json();
+
+      if (result.status_code === 200) {
+
+        router.push(result.redirectPath);
+      } else {
+
+        setErrorMessage(result.status_message);
+      }
+    } catch (error) {
+      setErrorMessage("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
   };
 
   const handleRegisterClick = () => {
-    // เมื่อคลิกที่ "สมัครบัญชีผู้ใช้งาน"
     router.push("/BadmintonCourt/register");
   };
 
@@ -63,6 +85,11 @@ const LoginPage = () => {
               )}
             </div>
 
+            {/* แสดงข้อความข้อผิดพลาด */}
+            {errorMessage && (
+              <div className="mb-3 text-red-200 text-sm">{errorMessage}</div>
+            )}
+
             <button
               type="submit"
               className="w-full py-2 bg-[#3498db] text-white text-lg font-semibold rounded-lg shadow-md hover:bg-[#2980b9] transition cursor-pointer"
@@ -72,7 +99,7 @@ const LoginPage = () => {
           </form>
 
           <div
-            onClick={handleRegisterClick} 
+            onClick={handleRegisterClick}
             className="mt-3 text-white font-semibold text-lg drop-shadow-[1px_1px_0px_rgba(255,0,0,1)] cursor-pointer hover:scale-105 transition"
           >
             สมัครบัญชีผู้ใช้งาน
@@ -84,5 +111,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-
-
