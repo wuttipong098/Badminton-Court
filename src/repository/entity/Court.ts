@@ -17,6 +17,9 @@ export class Court {
   @Column({ name: 'price', type: 'text' })
   price!: string;
 
+  @Column({ name: 'paymentTime', type: 'text' })
+  paymentTime!: string;
+
   @Column({ name: 'isBooked', type: 'bool'})
   isBooked!: boolean;
 
