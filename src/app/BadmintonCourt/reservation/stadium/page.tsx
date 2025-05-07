@@ -3,7 +3,6 @@
 import styles from '@/styles/stadium.module.css';
 import Image from "next/image";
 import ball from "@/public/ball.png";
-import calendar from "@/public/calendar.png";
 import court from "@/public/corut.png";
 import { useRouter } from "next/navigation";
 import { useState } from 'react';
@@ -17,14 +16,11 @@ type TimeSlot = {
 
 const StadiumPage = () => {
     const router = useRouter();
-    const [selectedTime, setSelectedTime] = useState("");
     const [selectedTimeSlots, setSelectedTimeSlots] = useState<TimeSlot[]>([]);
-    const [selectedDate, setSelectedDate] = useState<string>("");
-
     const MySwal = withReactContent(Swal);
 
     const handleClick = () => {
-        router.push("/BadmintonCourt/reservation/stadium");
+        router.push("/BadmintonCourt/reservation/payment");
     };
 
     const handleTimeSlotClick = (time: string, courtIndex: number) => {
@@ -42,57 +38,6 @@ const StadiumPage = () => {
             }
         });
     };
-
-    // ฟังก์ชันแปลงวันที่จาก "YYYY-MM-DD" เป็น "DD/MM/YYYY" (พ.ศ.)
-    const formatThaiDate = (dateString: string) => {
-        if (!dateString) return "";
-        const [year, month, day] = dateString.split("-");
-        const thaiYear = parseInt(year) + 543;
-        return `${day}/${month}/${thaiYear}`;
-    };
-
-    // ฟังก์ชันจัดการการจอง
-    const handleBooking = () => {
-        if (selectedTimeSlots.length === 0 || !selectedDate) {
-            MySwal.fire({
-                icon: 'warning',
-                title: 'กรุณาเลือกวันที่และเวลาที่ต้องการจอง',
-                confirmButtonText: 'ตกลง',
-            });
-            return;
-        }
-
-        // เรียงลำดับ selectedTimeSlots ตามสนาม (court) และเวลา (time)
-        const sortedTimeSlots = [...selectedTimeSlots].sort((a, b) => {
-            // เรียงตามสนามก่อน
-            if (a.court !== b.court) {
-                return a.court - b.court; // จากน้อยไปมากตามเลขสนาม
-            }
-            // ถ้าสนามเท่ากัน ให้เรียงตามเวลา
-            return a.time.localeCompare(b.time); // เรียงตามตัวอักษรของเวลา
-        });
-
-        // สร้าง bookingDetails จาก sortedTimeSlots
-        const bookingDetails = sortedTimeSlots.map(slot => 
-            `สนามที่ ${slot.court}: ${slot.time}`
-        ).join('<br>');
-
-        MySwal.fire({
-            icon: 'warning',
-            title: 'ยืนยันการจอง',
-            html: `
-                <p>วันที่: ${selectedDate}</p>
-                <p>รายละเอียดการจอง:</p>
-                ${bookingDetails}
-            `,
-            confirmButtonText: 'ชำระเงิน',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.push("/BadmintonCourt/reservation/payment");
-            }
-        });
-    };
-
     const renderTimeSlots = (courtIndex: number) => {
         const timeSlots = [
             "08:00 - 09:00", "09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00",
@@ -130,47 +75,8 @@ const StadiumPage = () => {
                     </div>
                 </div>
                 <div className={styles.controlContainer}>
-                    <div className={styles.day}>
-                        <input
-                            type="text"
-                            className={styles.inputday}
-                            value={selectedDate}
-                            placeholder="วัน/เดือน/ปี"
-                            readOnly
-                            onClick={() => {
-                                const dateInput = document.getElementById("hiddenDatePicker") as HTMLInputElement;
-                                dateInput?.showPicker();
-                            }}
-                        />
-                        <input
-                            type="date"
-                            id="hiddenDatePicker"
-                            className={styles.hiddenDatePicker}
-                            onChange={(e) => setSelectedDate(formatThaiDate(e.target.value))}
-                        />
-                        <Image
-                            src={calendar}
-                            alt="Calendar Icon"
-                            width={24}
-                            height={24}
-                            className={styles.calendarIcon}
-                            onClick={() => {
-                                const dateInput = document.getElementById("hiddenDatePicker") as HTMLInputElement;
-                                dateInput?.showPicker();
-                            }}
-                        />
-                    </div>
-                    <div className={styles.time}>
-                        <select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)}>
-                            <option value="" disabled>เวลา</option>
-                            <option>08:00</option>
-                            <option>09:00</option>
-                            <option>10:00</option>
-                        </select>
-                    </div>
                     <div className="flex space-x-2">
-                        <button className={styles.button} onClick={handleBooking}>จอง</button>
-                        <button className={styles.buttons}>ค้นหา</button>
+                        <button className={styles.button} onClick={handleClick}>จอง</button>
                     </div>
                 </div>
                 <div className="mt-20">

@@ -10,6 +10,7 @@ import พรนิมิต4 from "@/public/พรนิมิต4.jpg";
 import { useRouter } from "next/navigation";
 import { FaSearch, FaHeart, FaMapMarkerAlt, FaPhone } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
+import calendar from "@/public/calendar.png";
 
 interface Court {
     id: number;
@@ -29,11 +30,27 @@ const badmintonCourts: Court[] = [
     { id: 7, name: "stadium G", phone: "093-xxx-xxxx", province: "เชียงใหม่", favorite: false },
 ];
 
+type TimeSlot = {
+    time: string;
+    court: number;
+};
+
 const ReservationPage = () => {
     const router = useRouter();
+    const [selectedTime, setSelectedTime] = useState("");
+    const [selectedTimeSlots, setSelectedTimeSlots] = useState<TimeSlot[]>([]);
+    const [selectedDate, setSelectedDate] = useState<string>("");
 
     const [courts, setCourts] = useState<Court[]>(badmintonCourts);
     const [showFavorites, setShowFavorites] = useState(false);
+
+    const formatThaiDate = (dateString: string) => {
+        if (!dateString) return "";
+        const [year, month, day] = dateString.split("-");
+        const thaiYear = parseInt(year) + 543;
+        return `${day}/${month}/${thaiYear}`;
+    };
+
 
     const loadFavoritesFromStorage = () => {
         if (typeof window !== 'undefined') {
@@ -94,6 +111,46 @@ const ReservationPage = () => {
                     <h2 className={styles.h2}>CourtBooking</h2>
                     <div className={styles.ball}>
                         <Image src={ball} alt="Badminton Court Logo" width={50} height={50} />
+                    </div>
+                </div>
+                <div className={styles.controlContainer}>
+                    <div className={styles.day}>
+                        <input
+                            type="text"
+                            className={styles.inputday}
+                            value={selectedDate}
+                            placeholder="วัน/เดือน/ปี"
+                            readOnly
+                            onClick={() => {
+                                const dateInput = document.getElementById("hiddenDatePicker") as HTMLInputElement;
+                                dateInput?.showPicker();
+                            }}
+                        />
+                        <input
+                            type="date"
+                            id="hiddenDatePicker"
+                            className={styles.hiddenDatePicker}
+                            onChange={(e) => setSelectedDate(formatThaiDate(e.target.value))}
+                        />
+                        <Image
+                            src={calendar}
+                            alt="Calendar Icon"
+                            width={24}
+                            height={24}
+                            className={styles.calendarIcon}
+                            onClick={() => {
+                                const dateInput = document.getElementById("hiddenDatePicker") as HTMLInputElement;
+                                dateInput?.showPicker();
+                            }}
+                        />
+                    </div>
+                    <div className={styles.time}>
+                        <select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)}>
+                            <option value="" disabled>เวลา</option>
+                            <option>08:00</option>
+                            <option>09:00</option>
+                            <option>10:00</option>
+                        </select>
                     </div>
                 </div>
             </div>

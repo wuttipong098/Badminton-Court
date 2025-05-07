@@ -1,9 +1,9 @@
 .header {
     position: absolute;
-    top: 100px; /* ขยับตำแหน่ง .header ลงจากด้านบน 100px */
+    top: 100px;
     display: flex;
-    flex-direction: column; /* ให้ h1 อยู่ข้างบน h2 อยู่ข้างล่าง */
-    padding-left: 20px; /* ขยับตัวหนังสือไปทางซ้าย */
+    flex-direction: column;
+    padding-left: 20px;
 }
 
 .h1 {
@@ -16,19 +16,19 @@
     color: white;
     font-size: 36px;
     font-weight: bold;
-    margin-top: -20px; /* ขยับ h2 ขึ้นไปอีก */
+    margin-top: -20px;
 }
 
 .ball {
-    margin-left: 50px; /* ระยะห่างของไอคอนลูกขนไก่ */
-    position: absolute; /* ให้รูปบอลอยู่ข้างๆ h1 */
+    margin-left: 50px;
+    position: absolute;
     top: 30%;
-    left: 160px; /* ระยะห่างจาก h1 */
-    transform: translateY(-50%); /* จัดตำแหน่งให้รูปอยู่กลางแนวตั้ง */
+    left: 160px;
+    transform: translateY(-50%);
 }
 
 .w-full {
-    position: relative; /* ให้ .header ซ้อนทับได้ */
+    position: relative;
 }
 
 /* Header Navigation */
@@ -36,7 +36,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px; /* ระยะห่างระหว่าง input, button และ select */
+    gap: 10px;
     padding: 15px;
     background-color: #ffffff;
 }
@@ -44,12 +44,12 @@
 /* Search Box */
 .search {
     position: relative;
-    width: 300px; /* กำหนดขนาด input */
+    width: 300px;
 }
 
 .insearch {
     width: 100%;
-    padding: 10px 10px 10px 40px; /* เว้นที่ด้านซ้ายให้ไอคอน */
+    padding: 10px 10px 10px 40px;
     font-size: 16px;
     border: 2px solid #1F9378;
     border-radius: 8px;
@@ -59,12 +59,11 @@
 /* Search Icon */
 .searchIcon {
     position: absolute;
-    left: 10px; /* วางไอคอนด้านซ้ายของ input */
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: #1F9378;
 }
-
 
 .buttons, .province {
     background-color: #1F9378;
@@ -78,15 +77,15 @@
 }
 
 .heartIcon {
-    color: #FF0044;  /* สีปกติของไอคอน */
-    margin-left: 10px;  /* เว้นระยะจาก select */
-    cursor: pointer;  /* เปลี่ยนเคอร์เซอร์เป็นมือเมื่อชี้ไปที่ไอคอน */
-    transition: color 0.3s ease;  /* ทำให้การเปลี่ยนสีลื่นไหล */
+    color: #FF0044;
+    margin-left: 10px;
+    cursor: pointer;
+    transition: color 0.3s ease;
 }
 
 /* เมื่อไอคอนถูกกด */
 .liked {
-    color: #FF0044;  /* สีใหม่เมื่อไอคอนถูกกด */
+    color: #FF0044;
 }
 
 .courtList {
@@ -95,7 +94,6 @@
     align-items: center;
     gap: 10px;
     margin-top: 20px;
-    
 }
 
 .courtItem {
@@ -107,7 +105,6 @@
     color: white;
     padding: 10px;
     border-radius: 8px;
-    
 }
 
 .selectButton {
@@ -122,9 +119,8 @@
 }
 
 .selectButton:hover {
-    background-color: #2980b9; /* เทียบเท่ากับ hover:bg-[#2980b9] */
+    background-color: #2980b9;
 }
-
 
 .favorite {
     color: #FF0044;
@@ -133,5 +129,65 @@
 
 .notFavorite {
     color: gray;
+    cursor: pointer;
+}
+
+/* Control Container Styles (Aligned with stadium.module.css) */
+.controlContainer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 15px;
+    position: relative;
+    top: 80px;
+    right: 50px;
+}
+
+.day, .time {
+    display: flex;
+    align-items: center;
+}
+
+.inputday, .time select {
+    width: 150px;
+    height: 40px;
+    padding: 5px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    text-align: center;
+    background-color: white;
+    color: #000000;
+}
+
+.inputday::placeholder {
+    color: #000000;
+    opacity: 1;
+}
+
+.inputday::-webkit-input-placeholder {
+    color: #000000;
+}
+
+.inputday::-moz-placeholder {
+    color: #000000;
+    opacity: 1;
+}
+
+.inputday::-ms-input-placeholder {
+    color: #000000;
+}
+
+.hiddenDatePicker {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.calendarIcon {
+    position: absolute;
+    right: 175px;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
 }

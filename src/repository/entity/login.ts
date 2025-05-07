@@ -17,8 +17,8 @@ export class user {
   @Column({ name: 'password', type: 'varchar', length: 100 })
   password!: string;
 
-  @Column({ name: 'phone_number', type: 'int4' })
-  phone_number!: number;
+  @Column({ name: 'phone_number', type: 'varchar', length: 100 })
+  phone_number!: string;
 
   @Column({ name: "profile", type: "bytea", nullable: true})
   profile: Buffer | null = null;
