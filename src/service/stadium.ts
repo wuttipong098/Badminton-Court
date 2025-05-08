@@ -13,7 +13,7 @@ function formatStadiumResponse(stadiumsData: { total: number; data: stadium[] })
       StadiumName: stadium.stadium_name,
       CourtAll: stadium.court_all,
       Location: stadium.location,
-      ImageStadium: stadium.images && stadium.images.length > 0 ? stadium.images[0].image_stadium ?? undefined : undefined,
+      ImageStadium: stadium.images?.map((img) => img.image_stadium).filter((img): img is string => !!img) ?? [],
       FavoriteID: stadium.favorites && stadium.favorites.length > 0 ? stadium.favorites[0].favorite_id : undefined,
     })),
     total: stadiumsData.total,

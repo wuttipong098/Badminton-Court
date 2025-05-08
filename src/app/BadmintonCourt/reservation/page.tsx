@@ -25,58 +25,71 @@ const ReservationPage = () => {
     const [selectedDate, setSelectedDate] = useState<string>("");
     const [showFavorites, setShowFavorites] = useState(false);
     const [selectedProvince, setSelectedProvince] = useState('');
+    const [selectedImage, setSelectedImage] = useState<string | null>(null); // สถานะสำหรับรูปภาพที่เลือก
+    const [showModal, setShowModal] = useState(false); // สถานะสำหรับแสดง modal
+    const [searchQuery, setSearchQuery] = useState(""); // สถานะสำหรับช่องค้นหาชื่อสนาม
 
     // ฟังก์ชันแปลง Buffer หรือ string เป็น base64 URL
     const getImageSrc = (image: string | Buffer | undefined): string => {
         if (!image) return '/default-image.jpg';
         if (typeof image === 'string') {
-            // ตรวจสอบว่าเป็น base64 string หรือ URL
             if (image.startsWith('data:image')) return image;
             return `data:image/jpeg;base64,${image}`;
         }
-        // หากเป็น Buffer แปลงเป็น base64
         return `data:image/jpeg;base64,${Buffer.from(image).toString('base64')}`;
     };
 
     // ดึงข้อมูลจาก API
-    useEffect(() => {
-        const fetchCourts = async () => {
-            try {
-                const params: SearchAccountParams = {
-                    page: 1,
-                    pageSize: 30,
-                    Location: selectedProvince ? `%${selectedProvince}%` : undefined,
-                };
+    const fetchCourts = async (params: SearchAccountParams) => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/stadium', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(params),
+            });
 
-                const response = await fetch('/api/stadium', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(params),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch courts');
-                }
-
-                const result: UserResponseModel = await response.json();
-                if (result.status_code === 200) {
-                    setCourts(result.data);
-                    localStorage.setItem('favoriteCourts', JSON.stringify(result.data));
-                } else {
-                    setErrorMessage(result.status_message || "ไม่สามารถดึงข้อมูลสนามได้");
-                }
-            } catch (error) {
-                console.error('Error fetching courts:', error);
-                setErrorMessage("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
-            } finally {
-                setLoading(false);
+            if (!response.ok) {
+                throw new Error('Failed to fetch courts');
             }
-        };
 
-        fetchCourts();
+            const result: UserResponseModel = await response.json();
+            if (result.status_code === 200) {
+                setCourts(result.data);
+                localStorage.setItem('favoriteCourts', JSON.stringify(result.data));
+            } else {
+                setErrorMessage(result.status_message || "ไม่สามารถดึงข้อมูลสนามได้");
+            }
+        } catch (error) {
+            console.error('Error fetching courts:', error);
+            setErrorMessage("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // เรียกใช้เมื่อ component เริ่มต้นหรือเปลี่ยนจังหวัด
+    useEffect(() => {
+        const params: SearchAccountParams = {
+            page: 1,
+            pageSize: 30,
+            Location: selectedProvince ? `%${selectedProvince}%` : undefined,
+        };
+        fetchCourts(params);
     }, [selectedProvince]);
+
+    // ฟังก์ชันค้นหา
+    const handleSearch = () => {
+        const params: SearchAccountParams = {
+            page: 1,
+            pageSize: 30,
+            StadiumName: searchQuery ? `%${searchQuery}%` : undefined,
+            Location: selectedProvince ? `%${selectedProvince}%` : undefined,
+        };
+        fetchCourts(params);
+    };
 
     const formatThaiDate = (dateString: string) => {
         if (!dateString) return "";
@@ -108,6 +121,12 @@ const ReservationPage = () => {
     };
 
     const displayedCourts = showFavorites ? courts.filter((court) => !!court.FavoriteID) : courts;
+
+    // ฟังก์ชันปิด modal
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedImage(null);
+    };
 
     return (
         <div className={styles.container}>
@@ -163,9 +182,17 @@ const ReservationPage = () => {
             <div className={styles.headernav}>
                 <div className={styles.search}>
                     <FaSearch className={styles.searchIcon} size={20} />
-                    <input type="text" className={styles.insearch} placeholder="ชื่อสนามแบดมินตัน" id="stadium" name="stadium" />
+                    <input
+                        type="text"
+                        className={styles.insearch}
+                        placeholder="ชื่อสนามแบดมินตัน"
+                        id="stadium"
+                        name="stadium"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                 </div>
-                <button className={styles.buttons}>ค้นหา</button>
+                <button className={styles.buttons} onClick={handleSearch}>ค้นหา</button>
                 <select
                     className={styles.province}
                     value={selectedProvince}
@@ -184,7 +211,7 @@ const ReservationPage = () => {
                     style={{ cursor: 'pointer', marginLeft: '10px' }}
                 />
             </div>
-            <div className="flex flex-col min personally-h-screen">
+            <div className="flex flex-col min-h-screen">
                 <div className="flex-grow">
                     <div className={styles.container}>
                         {loading && <div className="text-gray-500 text-center mt-4">กำลังโหลด...</div>}
@@ -202,34 +229,35 @@ const ReservationPage = () => {
                                             />
                                             <div className="flex flex-col flex-shrink-0 mr-4">
                                                 <Image
-                                                    src={getImageSrc(court.ImageStadium)}
+                                                    src={getImageSrc(court.ImageStadium?.[0]) || '/default-image.jpg'}
                                                     alt="Court Image"
                                                     width={300}
                                                     height={200}
-                                                    className="rounded-lg"
+                                                    className="rounded-lg cursor-pointer"
+                                                    onClick={() => { setSelectedImage(getImageSrc(court.ImageStadium?.[0]) || '/default-image.jpg'); setShowModal(true); }}
                                                 />
                                                 <div className="flex space-x-2 mt-2 ml-0">
-                                                    <Image
-                                                        src={getImageSrc(court.ImageStadium)}
-                                                        alt="Court Image 1"
-                                                        width={90}
-                                                        height={60}
-                                                        className="rounded-lg"
-                                                    />
-                                                    <Image
-                                                        src={getImageSrc(court.ImageStadium)}
-                                                        alt="Court Image 2"
-                                                        width={90}
-                                                        height={60}
-                                                        className="rounded-lg"
-                                                    />
-                                                    <Image
-                                                        src={getImageSrc(court.ImageStadium)}
-                                                        alt="Court Image 3"
-                                                        width={90}
-                                                        height={60}
-                                                        className="rounded-lg"
-                                                    />
+                                                    {court.ImageStadium && court.ImageStadium.length > 0 ? (
+                                                        court.ImageStadium.slice(1, 4).map((image, index) => (
+                                                            <Image
+                                                                key={index}
+                                                                src={getImageSrc(image) || '/default-image.jpg'}
+                                                                alt={`Court Image ${index + 2}`}
+                                                                width={90}
+                                                                height={60}
+                                                                className="rounded-lg cursor-pointer"
+                                                                onClick={() => { setSelectedImage(getImageSrc(image) || '/default-image.jpg'); setShowModal(true); }}
+                                                            />
+                                                        ))
+                                                    ) : (
+                                                        <Image
+                                                            src="/default-image.jpg"
+                                                            alt="Default Image"
+                                                            width={90}
+                                                            height={60}
+                                                            className="rounded-lg"
+                                                        />
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="flex flex-col flex-grow">
@@ -263,7 +291,28 @@ const ReservationPage = () => {
                     </div>
                 </div>
             </div>
-            <div className="w-full h-35 bg-[#1F9378]"></div>
+            <div className={`${styles.footer} w-full h-35 bg-[#1F9378]`}></div>
+
+            {/* Modal สำหรับแสดงรูปภาพขยาย */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeModal}>
+                    <div className="bg-white p-4 rounded-lg" onClick={(e) => e.stopPropagation()}>
+                        <Image
+                            src={selectedImage || '/default-image.jpg'}
+                            alt="Enlarged Court Image"
+                            width={600}
+                            height={400}
+                            className="rounded-lg"
+                        />
+                        <button
+                            className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+                            onClick={closeModal}
+                        >
+                            ปิด
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
