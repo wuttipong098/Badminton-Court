@@ -9,7 +9,7 @@ export const insertUser = async (params: CreateAccountParams) => {
     newUser.last_name = params.LastName || '';
     newUser.user_name = params.UserName || '';
     newUser.password = params.Password || '';
-    newUser.phone_number = params.PhoneNumber;
+    newUser.phone_number = params.PhoneNumber|| '';
     newUser.profile = params.Profile
       ? typeof params.Profile === 'string'
         ? Buffer.from(params.Profile, 'base64')

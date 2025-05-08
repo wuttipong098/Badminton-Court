@@ -3,7 +3,7 @@ export interface User {
   FirstName: string;
   LastName: string;
   UserName: string;
-  PhoneNumber: number;
+  PhoneNumber: string;
   Profile?: string | Buffer;
   RoleName: string;
 }

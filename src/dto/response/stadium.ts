@@ -1,16 +1,17 @@
-export interface User {
+export interface stadiums {
+    StadiumID: number;
     UserID: number;
-    FirstName: string;
-    LastName: string;
-    UserName: string;
-    PhoneNumber: string;
-    Profile?: string | Buffer;
+    StadiumName: string;
+    CourtAll: number;
+    Location: string;
+    ImageStadium?: string | Buffer;
+    FavoriteID?: number;
 }
 
 export interface UserResponseModel {
     status_code: number;
     status_message: string;
-    data: User[];
+    data: stadiums[];
     total: number;
 }
 

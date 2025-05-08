@@ -1,36 +1,19 @@
-import { SearchAccountParams, UpdateAccountParams } from '@/dto/request/account';
-import { UserResponseModel, User, ResponseModel } from '@/dto/response/account';
-import * as userAction from '@/repository/action/account';
+import {  UpdateAccountParams } from '@/dto/request/test';
+import { UserResponseModel, User, ResponseModel } from '@/dto/response/test';
+import * as userAction from '@/repository/action/test';
 
-function formatUserResponse(usersData: { total: number; data: { UserID: number; FirstName: string; LastName: string; UserName: string; PhoneNumber: string; Profile: string | null; }[] }): UserResponseModel {
+function formatUserResponse(usersData: { total: number; data: { ImownerID: number; UserID: number; StadiumID: number;  Profile: string | null; }[] }): UserResponseModel {
     return {
         status_code: 200,
         status_message: 'Data fetched successfully',
         data: usersData.data.map((user): User => ({
+            ImownerID: user.ImownerID,
             UserID: user.UserID,
-            FirstName: user.FirstName,
-            LastName: user.LastName,
-            UserName: user.UserName,
-            PhoneNumber: user.PhoneNumber,
-            Profile: user.Profile ?? undefined,
+            StadiumID: user.StadiumID,
+            ImageStadium: user.Profile ?? undefined,
         })),
         total: usersData.total,
     };
-}
-
-export async function getAllUsers(params: SearchAccountParams): Promise<UserResponseModel> {
-    try {
-        const usersData = await userAction.findUsers(params);
-        return formatUserResponse(usersData);
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        return {
-            status_code: 500,
-            status_message: 'Failed to fetch users',
-            data: [],
-            total: 0,
-        };
-    }
 }
 
 export async function updateAccount(params: UpdateAccountParams): Promise<ResponseModel> {
