@@ -4,7 +4,7 @@ export interface stadiums {
     StadiumName: string;
     CourtAll: number;
     Location: string;
-    ImageStadium?: string | Buffer;
+    ImageStadium?: string[];
     FavoriteID?: number;
 }
 
