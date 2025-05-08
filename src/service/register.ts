@@ -30,7 +30,7 @@ export async function registerUserService(params: CreateAccountParams): Promise<
       UserName: params.UserName || '',
       Password: params.Password || '',
       RoleName: params.RoleName || '',
-      PhoneNumber: params.PhoneNumber || 0,
+      PhoneNumber: params.PhoneNumber || '',
     };
     if (Object.values(requiredFields).some(value => !value)) {
       return {

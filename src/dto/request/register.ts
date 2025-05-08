@@ -4,7 +4,7 @@ export interface CreateAccountParams {
   LastName?: string;
   UserName?: string;
   Password?: string;
-  PhoneNumber: number;
+  PhoneNumber?: string;
   Profile?: string | Buffer;
   RoleName?: string;
 }

@@ -1,3 +1,7 @@
 export * from './historys'
 export * from './Court'
 export * from './login'
+export * from './stadium'
+export * from './favorite'
+export * from './imageow'
+export * from './test'

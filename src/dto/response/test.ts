@@ -1,10 +1,8 @@
 export interface User {
-    UserID: number;
-    FirstName: string;
-    LastName: string;
-    UserName: string;
-    PhoneNumber: string;
-    Profile?: string | Buffer;
+    ImownerID: number;
+    UserID?: number;
+    StadiumID?: number;
+    ImageStadium?: string | Buffer;
 }
 
 export interface UserResponseModel {
