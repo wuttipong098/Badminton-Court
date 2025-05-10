@@ -1,4 +1,3 @@
-// src/repository/entity/favorite.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity({ name: 'favorite' })

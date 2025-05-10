@@ -11,7 +11,7 @@ export async function loginUserService(params: LoginParams): Promise<{
   FirstName?: string;
   LastName?: string;
   RoleName?: string;
-  PhoneNumber?: number;
+  PhoneNumber?: string;
   Profile?: string;
 }> {
   try {

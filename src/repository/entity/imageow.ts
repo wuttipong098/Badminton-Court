@@ -1,4 +1,3 @@
-// src/repository/entity/imageow.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 @Entity({ name: 'image_owner' })

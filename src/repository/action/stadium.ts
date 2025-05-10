@@ -1,6 +1,7 @@
 import { getDbConnection } from '../db_connection';
 import { stadium } from '@/repository/entity/stadium';
-import { SearchAccountParams } from '@/dto/request/stadium';
+import { favorite } from '@/repository/entity/favorite';
+import { SearchAccountParams, CreateAccountParams, DeleteAccountParams } from '@/dto/request/stadium';
 import { Like, Equal, Not, IsNull } from 'typeorm';
 
 export const findStadiums = async (params: SearchAccountParams): Promise<{ data: stadium[]; total: number }> => {
@@ -40,5 +41,21 @@ export const findStadiums = async (params: SearchAccountParams): Promise<{ data:
     });
 
     return { data, total };
+  });
+};
+
+export const insertFavorite = async (params: CreateAccountParams) => {
+  return await getDbConnection(async (manager) => {
+    const newFavorite = new favorite();
+    newFavorite.user_id = params.UserID!;
+    newFavorite.stadium_id = params.StadiumID!;
+
+    return await manager.save(newFavorite);
+  });
+};
+
+export const deleteFavoriteById = async (params: DeleteAccountParams) => {
+  return await getDbConnection(async (manager) => {
+    return await manager.delete(favorite, { favorite_id: params.FavoriteID });
   });
 };

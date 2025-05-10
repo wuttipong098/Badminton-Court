@@ -74,7 +74,7 @@ const HistoryPage = () => {
                             data.map((booking, index) => (
                                 <div key={index} className={styles.rowtable}>
                                     <label className={styles.celltable}>{booking.BookingDate}</label>
-                                    <label className={styles.celltable}>{`${booking.StartTime} - ${booking.EndTime}`}</label>
+                                    <label className={styles.celltable}>{`${booking.StartTime.slice(0, 5)} - ${booking.EndTime.slice(0, 5)}`}</label>
                                     <label className={styles.celltable}>{booking.StadiumName}</label>
                                     <label className={styles.celltable}>{`สนามที่ ${booking.CourtNumber}`}</label>
                                 </div>

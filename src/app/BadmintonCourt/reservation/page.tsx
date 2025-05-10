@@ -25,11 +25,21 @@ const ReservationPage = () => {
     const [selectedDate, setSelectedDate] = useState<string>("");
     const [showFavorites, setShowFavorites] = useState(false);
     const [selectedProvince, setSelectedProvince] = useState('');
-    const [selectedImage, setSelectedImage] = useState<string | null>(null); // สถานะสำหรับรูปภาพที่เลือก
-    const [showModal, setShowModal] = useState(false); // สถานะสำหรับแสดง modal
-    const [searchQuery, setSearchQuery] = useState(""); // สถานะสำหรับช่องค้นหาชื่อสนาม
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [userId, setUserId] = useState<number | null>(null);
 
-    // ฟังก์ชันแปลง Buffer หรือ string เป็น base64 URL
+    // ฟังก์ชันดึง UserID จาก localStorage
+    useEffect(() => {
+        const storedUserId = localStorage.getItem('userID');
+        if (storedUserId) {
+            setUserId(parseInt(storedUserId, 10));
+        } else {
+            setErrorMessage("ไม่พบ UserID ใน localStorage");
+        }
+    }, []);
+
     const getImageSrc = (image: string | Buffer | undefined): string => {
         if (!image) return '/default-image.jpg';
         if (typeof image === 'string') {
@@ -39,7 +49,7 @@ const ReservationPage = () => {
         return `data:image/jpeg;base64,${Buffer.from(image).toString('base64')}`;
     };
 
-    // ดึงข้อมูลจาก API
+    // ฟังก์ชันดึงข้อมูลสนาม
     const fetchCourts = async (params: SearchAccountParams) => {
         setLoading(true);
         try {
@@ -57,8 +67,12 @@ const ReservationPage = () => {
 
             const result: UserResponseModel = await response.json();
             if (result.status_code === 200) {
-                setCourts(result.data);
-                localStorage.setItem('favoriteCourts', JSON.stringify(result.data));
+                const sortedCourts = result.data.sort((a, b) => {
+                    if (a.FavoriteID && !b.FavoriteID) return -1;
+                    if (!a.FavoriteID && b.FavoriteID) return 1;
+                    return 0;
+                });
+                setCourts(sortedCourts);
             } else {
                 setErrorMessage(result.status_message || "ไม่สามารถดึงข้อมูลสนามได้");
             }
@@ -70,17 +84,105 @@ const ReservationPage = () => {
         }
     };
 
-    // เรียกใช้เมื่อ component เริ่มต้นหรือเปลี่ยนจังหวัด
+    // ฟังก์ชันเพิ่มรายการโปรด
+    const addFavorite = async (stadiumId: number) => {
+        if (!userId) {
+            setErrorMessage("กรุณาล็อกอินก่อนเพิ่มรายการโปรด");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stadium', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    UserID: userId,
+                    StadiumID: stadiumId,
+                }),
+            });
+
+            const result = await response.json();
+            console.log('API Response (addFavorite):', result); // ดีบัก API response
+            if (result.status_code === 201 && result.data?.FavoriteID) {
+                setCourts((prevCourts) =>
+                    prevCourts.map((court) =>
+                        court.StadiumID === stadiumId ? { ...court, FavoriteID: result.data.FavoriteID } : court
+                    ).sort((a, b) => {
+                        if (a.FavoriteID && !b.FavoriteID) return -1;
+                        if (!a.FavoriteID && b.FavoriteID) return 1;
+                        return 0;
+                    })
+                );
+                setErrorMessage("เพิ่มรายการโปรดสำเร็จ");
+            } else {
+                setErrorMessage(result.status_message || "ไม่สามารถเพิ่มรายการโปรดได้: ไม่พบ FavoriteID");
+            }
+        } catch (error) {
+            console.error('Error adding favorite:', error);
+            setErrorMessage("เกิดข้อผิดพลาดในการเพิ่มรายการโปรด");
+        }
+    };
+
+    // ฟังก์ชันลบรายการโปรด
+    const removeFavorite = async (favoriteId: number) => {
+        if (!userId) {
+            setErrorMessage("กรุณาล็อกอินก่อนลบรายการโปรด");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stadium', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    FavoriteID: favoriteId,
+                }),
+            });
+
+            const result = await response.json();
+            if (result.status_code === 200) {
+                setCourts((prevCourts) =>
+                    prevCourts.map((court) =>
+                        court.FavoriteID === favoriteId ? { ...court, FavoriteID: undefined } : court
+                    ).sort((a, b) => {
+                        if (a.FavoriteID && !b.FavoriteID) return -1;
+                        if (!a.FavoriteID && b.FavoriteID) return 1;
+                        return 0;
+                    })
+                );
+                setErrorMessage("ลบรายการโปรดสำเร็จ");
+            } else {
+                setErrorMessage(result.status_message || "ไม่สามารถลบรายการโปรดได้");
+            }
+        } catch (error) {
+            console.error('Error removing favorite:', error);
+            setErrorMessage("เกิดข้อผิดพลาดในการลบรายการโปรด");
+        }
+    };
+
+    // ฟังก์ชัน toggle การกดหัวใจ
+    const toggleFavorite = async (stadiumId: number, favoriteId?: number) => {
+        if (favoriteId) {
+            await removeFavorite(favoriteId);
+        } else {
+            await addFavorite(stadiumId);
+        }
+    };
+
     useEffect(() => {
         const params: SearchAccountParams = {
             page: 1,
             pageSize: 30,
             Location: selectedProvince ? `%${selectedProvince}%` : undefined,
+            StadiumName: searchQuery ? `%${searchQuery}%` : undefined,
         };
         fetchCourts(params);
-    }, [selectedProvince]);
+    }, [selectedProvince, searchQuery, showFavorites]);
 
-    // ฟังก์ชันค้นหา
     const handleSearch = () => {
         const params: SearchAccountParams = {
             page: 1,
@@ -98,16 +200,6 @@ const ReservationPage = () => {
         return `${day}/${month}/${thaiYear}`;
     };
 
-    const toggleFavorite = (id: number) => {
-        setCourts((prevCourts) => {
-            const updatedCourts = prevCourts.map((court) =>
-                court.StadiumID === id ? { ...court, FavoriteID: court.FavoriteID ? undefined : court.StadiumID } : court
-            );
-            localStorage.setItem('favoriteCourts', JSON.stringify(updatedCourts));
-            return updatedCourts;
-        });
-    };
-
     const handleProvinceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedProvince(event.target.value);
     };
@@ -120,9 +212,8 @@ const ReservationPage = () => {
         setShowFavorites((prev) => !prev);
     };
 
-    const displayedCourts = showFavorites ? courts.filter((court) => !!court.FavoriteID) : courts;
+    const displayedCourts = courts;
 
-    // ฟังก์ชันปิด modal
     const closeModal = () => {
         setShowModal(false);
         setSelectedImage(null);
@@ -202,7 +293,7 @@ const ReservationPage = () => {
                     <option value="กรุงเทพมหานคร">กรุงเทพมหานคร</option>
                     <option value="เชียงใหม่">เชียงใหม่</option>
                     <option value="ชลบุรี">ชลบุรี</option>
-                    <option value="พะเยา">พะเยา</option>
+                    <option value="สุโขทัย">สุโขทัย</option>
                 </select>
                 <FaHeart
                     className={showFavorites ? styles.favorite : styles.heartIcon}
@@ -224,7 +315,7 @@ const ReservationPage = () => {
                                             <FaHeart
                                                 className={court.FavoriteID ? styles.favorite : styles.notFavorite}
                                                 size={30}
-                                                onClick={() => toggleFavorite(court.StadiumID)}
+                                                onClick={() => toggleFavorite(court.StadiumID, court.FavoriteID)}
                                                 style={{ position: 'absolute', top: '10px', right: '10px' }}
                                             />
                                             <div className="flex flex-col flex-shrink-0 mr-4">
@@ -293,7 +384,6 @@ const ReservationPage = () => {
             </div>
             <div className={`${styles.footer} w-full h-35 bg-[#1F9378]`}></div>
 
-            {/* Modal สำหรับแสดงรูปภาพขยาย */}
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeModal}>
                     <div className="bg-white p-4 rounded-lg" onClick={(e) => e.stopPropagation()}>
