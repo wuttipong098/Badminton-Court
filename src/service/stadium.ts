@@ -1,5 +1,5 @@
-import { SearchAccountParams } from '@/dto/request/stadium';
-import { stadiums, UserResponseModel } from '@/dto/response/stadium';
+import { SearchAccountParams, CreateAccountParams, DeleteAccountParams } from '@/dto/request/stadium';
+import { stadiums, UserResponseModel, ResponseModel } from '@/dto/response/stadium';
 import { stadium } from '@/repository/entity/stadium';
 import * as stadiumRepo from '@/repository/action/stadium';
 
@@ -32,6 +32,44 @@ export async function getAllStadiums(params: SearchAccountParams): Promise<UserR
       status_message: 'Failed to fetch stadiums',
       data: [],
       total: 0,
+    };
+  }
+}
+
+export async function addFavorite(params: CreateAccountParams): Promise<ResponseModel> {
+  try {
+    const savedFavorite = await stadiumRepo.insertFavorite(params);
+    return {
+      status_code: 201,
+      status_message: 'เพิ่มรายการโปรดสำเร็จ',
+    };
+  } catch (error) {
+    console.error('Error adding favorite:', error);
+    return {
+      status_code: 500,
+      status_message: 'ไม่สามารถเพิ่มรายการโปรดได้',
+    };
+  }
+}
+
+export async function removeFavorite(params: DeleteAccountParams): Promise<ResponseModel> {
+  try {
+    const result = await stadiumRepo.deleteFavoriteById(params);
+    if (result.affected === 0) {
+      return {
+        status_code: 404,
+        status_message: 'ไม่พบรายการโปรด',
+      };
+    }
+    return {
+      status_code: 200,
+      status_message: 'ลบรายการโปรดสำเร็จ',
+    };
+  } catch (error) {
+    console.error('Error removing favorite:', error);
+    return {
+      status_code: 500,
+      status_message: 'ไม่สามารถลบรายการโปรดได้',
     };
   }
 }

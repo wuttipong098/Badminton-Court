@@ -12,3 +12,13 @@ export interface SearchAccountParams {
   pageSize?: number;
   sort?: { field: keyof stadium; order: 'ASC' | 'DESC' };
 }
+
+export interface CreateAccountParams {
+  FavoriteID?: number;
+  UserID?: number;
+  StadiumID?: number;
+}
+
+export interface DeleteAccountParams {
+  FavoriteID?: number;
+}
