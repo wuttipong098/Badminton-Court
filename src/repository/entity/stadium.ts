@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { user } from './login'; 
 
 @Entity({ name: 'stadium' })
 export class stadium {
@@ -7,6 +8,10 @@ export class stadium {
 
   @Column({ name: 'user_id', type: 'int4' })
   user_id!: number;
+
+  @ManyToOne(() => user, (user) => user.stadiums) 
+  @JoinColumn({ name: 'user_id' })
+  user!: user;
 
   @Column({ name: 'stadium_name', type: 'varchar', length: 100 })
   stadium_name: string = '';

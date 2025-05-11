@@ -14,6 +14,9 @@ export class payments {
     @Column({ name: 'payment_status', type: 'varchar', length: 50 })
     payment_status!: string;
 
+    @Column({ name: 'image_slip', type: 'bytea', nullable: true })
+    image_slip: Buffer | null = null;
+
     @Column({ name: 'payment_date', type: 'date' })
     payment_date!: Date;
 

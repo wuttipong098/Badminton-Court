@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity({ name: 'bookings' })
 export class bookings {
-    @PrimaryGeneratedColumn({ name: 'history_id', type: 'int8' })
+    @PrimaryGeneratedColumn({ name: 'booking_id', type: 'int8' })
     booking_id!: number;
 
     @Column({ name: 'user_id', type: 'int4' })
@@ -23,10 +23,12 @@ export class bookings {
     @Column({ name: 'status_id', type: 'int4' })
     status_id!: number;
 
+    @Column({ name: 'booking_date', type: 'date' })
+    booking_date!: string;
+
     @Column({ name: 'created_date', type: 'date' })
     created_date!: Date;
 
     @Column({ name: 'update_date', type: 'date', nullable: true })
     update_date!: Date | null;
-
 }

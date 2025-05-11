@@ -1,6 +1,8 @@
+// repository/action/stadium.ts
 import { getDbConnection } from '../db_connection';
 import { stadium } from '@/repository/entity/stadium';
 import { favorite } from '@/repository/entity/favorite';
+import { user } from '@/repository/entity/login';
 import { SearchAccountParams, CreateAccountParams, DeleteAccountParams } from '@/dto/request/stadium';
 import { Like, Equal, Not, IsNull } from 'typeorm';
 
@@ -24,12 +26,12 @@ export const findStadiums = async (params: SearchAccountParams): Promise<{ data:
 
     const total = await manager.count(stadium, {
       where,
-      relations: ['images', 'favorites'],
+      relations: ['images', 'favorites', 'user'], 
     });
 
     const data = await manager.find(stadium, {
       where,
-      relations: ['images', 'favorites'],
+      relations: ['images', 'favorites', 'user'], 
       skip,
       take: pageSize,
       order,
