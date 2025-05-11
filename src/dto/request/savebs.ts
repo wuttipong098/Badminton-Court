@@ -5,7 +5,7 @@ export interface TimeRange {
   
   export interface SaveBookingSettingRequest {
     courtId: string | null;
-    stadiumId: number;
+    stadiumId?: number;
     price: number;
     promoPrice?: number;
     timeRanges: TimeRange[];

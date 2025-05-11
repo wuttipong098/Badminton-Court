@@ -1,5 +1,6 @@
 import { getDbConnection } from '../db_connection';
 import { Court } from '@/repository/entity/Court';
+import { stadiumBS } from '@/repository/entity/stadiumBS';
 import { SaveBookingSettingRequest } from '@/dto/request/savebs';
 import { SaveBookingSettingResponse } from '@/dto/response/savebs';
 
@@ -7,13 +8,25 @@ export async function saveOrUpdateBookingSettingsRepo(
   data: SaveBookingSettingRequest
 ): Promise<SaveBookingSettingResponse> {
   const courtIdNum = Number(data.courtId);
-  const stadiumIdNum = Number(data.stadiumId);
-
-  if (isNaN(courtIdNum) || isNaN(stadiumIdNum)) {
-    throw new Error('courtId หรือ stadiumId ไม่ถูกต้อง');
+  if (isNaN(courtIdNum)) {
+    throw new Error('courtId ไม่ถูกต้อง');
   }
 
   return await getDbConnection(async (manager) => {
+    // ✅ ดึง stadium จาก userId
+    const stadium = await manager.findOne(stadiumBS, {
+      where: { userId: data.userId },
+    });
+
+    if (!stadium) {
+      return {
+        success: false,
+        message: 'ไม่พบสนามของผู้ใช้งาน',
+      };
+    }
+
+    const stadiumIdNum = stadium.stadiumId;
+
     await manager.delete(Court, { courtId: courtIdNum });
 
     for (const range of data.timeRanges) {
