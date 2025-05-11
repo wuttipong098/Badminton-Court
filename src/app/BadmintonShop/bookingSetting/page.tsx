@@ -13,7 +13,6 @@ const BookingSettings = () => {
   const searchParams = useSearchParams();
   const paramCourtId = searchParams.get("courtId");
   const [courtId, setCourtId] = useState<number | null>(paramCourtId ? Number(paramCourtId) : null);
-  const [stadiumId, setStadiumId] = useState("");
   const [startHour, setStartHour] = useState("");
   const [startMinute, setStartMinute] = useState("");
   const [endHour, setEndHour] = useState("");
@@ -31,7 +30,6 @@ const BookingSettings = () => {
   
     const payload = {
       courtId,
-      stadiumId: Number(stadiumId), // 👈 อย่าลืมแปลงเป็น number
       price,
       timeRanges,
       paymentTime,

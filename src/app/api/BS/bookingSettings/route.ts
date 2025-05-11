@@ -14,12 +14,17 @@ export async function POST(req: Request) {
     }
 
     const result = await saveOrUpdateBookingSettingsService(body);
+    console.log('📥 Incoming booking setting request:', body);
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ API error:', error);
     return NextResponse.json(
-      { success: false, message: 'เกิดข้อผิดพลาดในการบันทึกการตั้งค่า' },
+      {
+        success: false,
+        message: error?.message || 'เกิดข้อผิดพลาดในการบันทึกการตั้งค่า',
+      },
       { status: 500 }
     );
   }
+  
 }
