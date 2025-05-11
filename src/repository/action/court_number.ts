@@ -1,7 +1,6 @@
 import { getDbConnection } from '../db_connection';
 import { CourtNumber } from '@/repository/entity/court_number';
 import { SlotTime } from '@/repository/entity/slot_time';
-import { Status } from '@/repository/entity/status';
 import { SearchAccountParams } from '@/dto/request/court';
 import { Equal } from 'typeorm';
 
