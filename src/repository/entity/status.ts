@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
 @Entity({ name: 'status_court' })
 export class Status {
-  @PrimaryGeneratedColumn({ name: 'status_id', type: 'bigint' })
+  @PrimaryGeneratedColumn({ name: 'status_id', type: 'int8' })
   status_id!: number;
 
   @Column({ name: 'status_name', type: 'varchar', length: 50 })

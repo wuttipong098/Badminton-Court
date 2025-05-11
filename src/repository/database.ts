@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { history, Court, user, stadium, stadiumBS,imageow, favorite, image_owner, CourtNumber, SlotTime, Status } from '@/repository/entity'; // นำเข้าโมเดลที่ต้องการ
+import { history, Court, user, stadium, stadiumBS,imageow, favorite, image_owner, CourtNumber, SlotTime, Status, bookings, payments  } from '@/repository/entity'; // นำเข้าโมเดลที่ต้องการ
 import {
   DATABASE_USERNAME,
   DATABASE_PASSWORD,
@@ -20,7 +20,7 @@ export const AppDataSource = new DataSource({
   password: decodedPassword,
   database: DATABASE_NAME,
   synchronize: false,
-  entities: [history, user, Court, stadium, stadiumBS, imageow, favorite, image_owner, CourtNumber, SlotTime, Status],
+  entities: [history, user, Court, stadium, stadiumBS, imageow, favorite, image_owner, CourtNumber, SlotTime, Status, bookings, payments],
   logging: true,
   extra: {
     ssl: false,

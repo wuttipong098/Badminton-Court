@@ -2,10 +2,10 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 't
 
 @Entity({ name: 'slot_time' })
 export class SlotTime {
-  @PrimaryGeneratedColumn({ name: 'slot_time_id', type: 'bigint' })
+  @PrimaryGeneratedColumn({ name: 'slot_time_id', type: 'int8' })
   slot_time_id!: number;
 
-  @Column({ name: 'court_id', type: 'integer' })
+  @Column({ name: 'court_id', type: 'int4' })
   court_id!: number;
 
   @Column({ name: 'booking_date', type: 'date' })
@@ -17,7 +17,7 @@ export class SlotTime {
   @Column({ name: 'end_time', type: 'time' })
   end_time!: string;
 
-  @Column({ name: 'status_id', type: 'integer' })
+  @Column({ name: 'status_id', type: 'int4' })
   status_id!: number;
 
   @Column({ name: 'created_date', type: 'date' })
