@@ -13,7 +13,6 @@ export const findStadiums = async (params: SearchAccountParams): Promise<{ data:
   return await getDbConnection(async (manager) => {
     const where: any = {
       stadium_id: params.StadiumID ? Equal(Number(params.StadiumID)) : undefined,
-      user_id: params.UserID ? Equal(Number(params.UserID)) : undefined,
       court_all: params.CourtAll && !isNaN(Number(params.CourtAll)) ? Equal(Number(params.CourtAll)) : undefined,
       stadium_name: params.StadiumName ? Like(`%${params.StadiumName}%`) : undefined,
       location: params.Location ? Like(`%${params.Location}%`) : undefined,
@@ -21,10 +20,6 @@ export const findStadiums = async (params: SearchAccountParams): Promise<{ data:
 
     if (params.ImageStadium) {
       where.images = { image_stadium: Not(IsNull()) };
-    }
-
-    if (params.FavoriteID) {
-      where.favorites = { favorite_id: Equal(Number(params.FavoriteID)) };
     }
 
     const total = await manager.count(stadium, {
@@ -40,6 +35,14 @@ export const findStadiums = async (params: SearchAccountParams): Promise<{ data:
       order,
     });
 
+    if (params.UserID) {
+      data.forEach((stadiumItem) => {
+        stadiumItem.favorites = stadiumItem.favorites?.filter(
+          (favorite) => favorite.user_id === Number(params.UserID)
+        ) || [];
+      });
+    }
+
     return { data, total };
   });
 };
@@ -50,7 +53,8 @@ export const insertFavorite = async (params: CreateAccountParams) => {
     newFavorite.user_id = params.UserID!;
     newFavorite.stadium_id = params.StadiumID!;
 
-    return await manager.save(newFavorite);
+    const savedFavorite = await manager.save(newFavorite);
+    return savedFavorite.favorite_id;
   });
 };
 

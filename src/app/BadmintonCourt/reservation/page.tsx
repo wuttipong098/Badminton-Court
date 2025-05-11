@@ -9,6 +9,10 @@ import { FaSearch, FaHeart, FaMapMarkerAlt, FaPhone } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
 import { SearchAccountParams } from "@/dto/request/stadium";
 import { stadiums, UserResponseModel } from "@/dto/response/stadium";
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+
+const MySwal = withReactContent(Swal);
 
 type TimeSlot = {
     time: string;
@@ -30,7 +34,6 @@ const ReservationPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [userId, setUserId] = useState<number | null>(null);
 
-    // ฟังก์ชันดึง UserID จาก localStorage
     useEffect(() => {
         const storedUserId = localStorage.getItem('userID');
         if (storedUserId) {
@@ -39,6 +42,15 @@ const ReservationPage = () => {
             setErrorMessage("ไม่พบ UserID ใน localStorage");
         }
     }, []);
+
+    useEffect(() => {
+        if (errorMessage) {
+            const timer = setTimeout(() => {
+                setErrorMessage("");
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [errorMessage]);
 
     const getImageSrc = (image: string | Buffer | undefined): string => {
         if (!image) return '/default-image.jpg';
@@ -49,7 +61,6 @@ const ReservationPage = () => {
         return `data:image/jpeg;base64,${Buffer.from(image).toString('base64')}`;
     };
 
-    // ฟังก์ชันดึงข้อมูลสนาม
     const fetchCourts = async (params: SearchAccountParams) => {
         setLoading(true);
         try {
@@ -58,7 +69,10 @@ const ReservationPage = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(params),
+                body: JSON.stringify({
+                    ...params,
+                    UserID: userId, 
+                }),
             });
 
             if (!response.ok) {
@@ -70,7 +84,7 @@ const ReservationPage = () => {
                 const sortedCourts = result.data.sort((a, b) => {
                     if (a.FavoriteID && !b.FavoriteID) return -1;
                     if (!a.FavoriteID && b.FavoriteID) return 1;
-                    return 0;
+                    return a.StadiumID - b.StadiumID;
                 });
                 setCourts(sortedCourts);
             } else {
@@ -84,7 +98,6 @@ const ReservationPage = () => {
         }
     };
 
-    // ฟังก์ชันเพิ่มรายการโปรด
     const addFavorite = async (stadiumId: number) => {
         if (!userId) {
             setErrorMessage("กรุณาล็อกอินก่อนเพิ่มรายการโปรด");
@@ -104,20 +117,20 @@ const ReservationPage = () => {
             });
 
             const result = await response.json();
-            console.log('API Response (addFavorite):', result); // ดีบัก API response
-            if (result.status_code === 201 && result.data?.FavoriteID) {
+            if (result.status_code === 201 && result.FavoriteID) {
                 setCourts((prevCourts) =>
                     prevCourts.map((court) =>
-                        court.StadiumID === stadiumId ? { ...court, FavoriteID: result.data.FavoriteID } : court
+                        court.StadiumID === stadiumId
+                            ? { ...court, FavoriteID: result.FavoriteID }
+                            : court
                     ).sort((a, b) => {
                         if (a.FavoriteID && !b.FavoriteID) return -1;
                         if (!a.FavoriteID && b.FavoriteID) return 1;
-                        return 0;
+                        return a.StadiumID - b.StadiumID;
                     })
                 );
-                setErrorMessage("เพิ่มรายการโปรดสำเร็จ");
             } else {
-                setErrorMessage(result.status_message || "ไม่สามารถเพิ่มรายการโปรดได้: ไม่พบ FavoriteID");
+                setErrorMessage(result.status_message || "ไม่สามารถเพิ่มรายการโปรดได้");
             }
         } catch (error) {
             console.error('Error adding favorite:', error);
@@ -125,7 +138,6 @@ const ReservationPage = () => {
         }
     };
 
-    // ฟังก์ชันลบรายการโปรด
     const removeFavorite = async (favoriteId: number) => {
         if (!userId) {
             setErrorMessage("กรุณาล็อกอินก่อนลบรายการโปรด");
@@ -147,14 +159,15 @@ const ReservationPage = () => {
             if (result.status_code === 200) {
                 setCourts((prevCourts) =>
                     prevCourts.map((court) =>
-                        court.FavoriteID === favoriteId ? { ...court, FavoriteID: undefined } : court
+                        court.FavoriteID === favoriteId
+                            ? { ...court, FavoriteID: undefined }
+                            : court
                     ).sort((a, b) => {
                         if (a.FavoriteID && !b.FavoriteID) return -1;
                         if (!a.FavoriteID && b.FavoriteID) return 1;
-                        return 0;
+                        return a.StadiumID - b.StadiumID;
                     })
                 );
-                setErrorMessage("ลบรายการโปรดสำเร็จ");
             } else {
                 setErrorMessage(result.status_message || "ไม่สามารถลบรายการโปรดได้");
             }
@@ -164,7 +177,6 @@ const ReservationPage = () => {
         }
     };
 
-    // ฟังก์ชัน toggle การกดหัวใจ
     const toggleFavorite = async (stadiumId: number, favoriteId?: number) => {
         if (favoriteId) {
             await removeFavorite(favoriteId);
@@ -181,7 +193,7 @@ const ReservationPage = () => {
             StadiumName: searchQuery ? `%${searchQuery}%` : undefined,
         };
         fetchCourts(params);
-    }, [selectedProvince, searchQuery, showFavorites]);
+    }, [selectedProvince, searchQuery, userId]);
 
     const handleSearch = () => {
         const params: SearchAccountParams = {
@@ -209,10 +221,27 @@ const ReservationPage = () => {
     };
 
     const handleShowFavorites = () => {
-        setShowFavorites((prev) => !prev);
+        const newShowFavorites = !showFavorites;
+        setShowFavorites(newShowFavorites);
+
+        // ตรวจสอบว่ามีสนามที่ถูกใจหรือไม่หลังจากกรอง
+        if (newShowFavorites) {
+            const favoriteCourts = courts.filter(court => court.FavoriteID !== undefined);
+            if (favoriteCourts.length === 0) {
+                MySwal.fire({
+                    icon: 'info',
+                    title: 'ไม่มีสนามที่ถูกใจ',
+                    text: 'คุณยังไม่ได้เพิ่มสนามใดในรายการโปรด',
+                    confirmButtonText: 'ตกลง',
+                });
+            }
+        }
     };
 
-    const displayedCourts = courts;
+    // กรองสนามตาม showFavorites: ถ้า true และมีสนามที่ถูกใจ แสดงเฉพาะนั้น, ถ้าไม่มีให้แสดงทั้งหมด
+    const displayedCourts = showFavorites && courts.some(court => court.FavoriteID !== undefined)
+        ? courts.filter(court => court.FavoriteID !== undefined)
+        : courts;
 
     const closeModal = () => {
         setShowModal(false);
