@@ -20,19 +20,26 @@ const BookingSettings = () => {
   const [endMinute, setEndMinute] = useState("");
   const [timeRanges, setTimeRanges] = useState<TimeRange[]>([]);
   const [price, setPrice] = useState(0);
-  const [promoPrice, setPromoPrice] = useState(0);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [paymentTime, setPaymentTime] = useState(0);
 
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   const minutes = ["00", "30"];
 
   const handleSave = async () => {
-    const payload = { courtId, stadiumId, price, timeRanges, paymentTime };
+    const storedUserId = localStorage.getItem("userID"); // 👈 หรือ Session/Cookie แล้วแต่คุณเก็บยังไง  
+    const userId = Number(storedUserId);
+  
+    const payload = {
+      courtId,
+      stadiumId: Number(stadiumId), // 👈 อย่าลืมแปลงเป็น number
+      price,
+      timeRanges,
+      paymentTime,
+      userId, // ✅ แนบ userId มาด้วย
+    };
   
     const res = await fetch("/api/BS/bookingSettings", {
-      method: "POST", // ใช้ POST สำหรับการเพิ่ม
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -44,6 +51,7 @@ const BookingSettings = () => {
       alert("เกิดข้อผิดพลาด: " + data.message);
     }
   };
+  
 
   const addTimeRange = () => {
     if (startHour && startMinute && endHour && endMinute) {

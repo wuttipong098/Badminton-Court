@@ -20,6 +20,9 @@ export class Court {
   @Column({ name: 'paymentTime', type: 'text' })
   paymentTime!: string;
 
+  @Column({ name: 'user_id', type: 'int4' })
+  userId!: number; 
+
   @Column({ name: 'isBooked', type: 'bool'})
   isBooked!: boolean;
 
