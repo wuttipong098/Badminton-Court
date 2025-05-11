@@ -18,10 +18,18 @@ export const findCourtDetails = async (params: SearchAccountParams): Promise<{ d
     });
 
     if (params.BookingDate) {
-      const bookingDateFormatted = params.BookingDate.split('/').reverse().join('-'); 
+      const bookingDateFormatted = params.BookingDate.split('/').reverse().join('-'); // "YYYY-MM-DD" from "DD/MM/YYYY"
       data.forEach((courtItem) => {
         courtItem.slots = courtItem.slots?.filter((slot: SlotTime) => {
-          const slotDate = slot.booking_date.toISOString().split('T')[0]; 
+          // ใช้ type assertion เพื่อจัดการกรณีที่ booking_date อาจเป็น string
+          const bookingDate = slot.booking_date as Date | string;
+          const slotDate = bookingDate instanceof Date
+            ? bookingDate.toISOString().split('T')[0]
+            : typeof bookingDate === 'string'
+            ? bookingDate.includes('/')
+              ? bookingDate.split('/').reverse().join('-') // แปลง "DD/MM/YYYY" เป็น "YYYY-MM-DD"
+              : bookingDate
+            : '';
           return slotDate === bookingDateFormatted;
         }) || [];
       });

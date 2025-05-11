@@ -1,9 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { SlotTime } from '@/repository/entity/slot_time';
 
 @Entity({ name: 'status_court' })
 export class Status {
-  @PrimaryGeneratedColumn({ name: 'status_id', type: 'int8' })
+  @PrimaryGeneratedColumn({ name: 'status_id', type: 'bigint' })
   status_id!: number;
 
   @Column({ name: 'status_name', type: 'varchar', length: 50 })
@@ -12,6 +11,11 @@ export class Status {
   @Column({ name: 'created_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_date!: Date;
 
-  @OneToMany(() => SlotTime, (slot) => slot.status, { cascade: true })
-  slots!: SlotTime[];
+  @OneToMany(
+    () => require('./slot_time').SlotTime,
+    (slot: any) => slot.status,
+    { cascade: ['insert', 'update'], onDelete: 'SET NULL' }
+  )
+  // Cascade insert/update for slots, set status_id to null when status is deleted
+  slots!: any[];
 }
