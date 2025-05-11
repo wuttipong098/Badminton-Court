@@ -36,6 +36,8 @@ const ReservationPage = () => {
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userID');
+        console.log('Stored userID in localStorage:', storedUserId); // ตรวจสอบ userID
+        console.log('All localStorage data:', localStorage); // ดูข้อมูลทั้งหมดใน localStorage
         if (storedUserId) {
             setUserId(parseInt(storedUserId, 10));
         } else {
@@ -71,7 +73,7 @@ const ReservationPage = () => {
                 },
                 body: JSON.stringify({
                     ...params,
-                    UserID: userId, 
+                    UserID: userId,
                 }),
             });
 
@@ -212,19 +214,38 @@ const ReservationPage = () => {
         return `${day}/${month}/${thaiYear}`;
     };
 
+    const convertToISODate = (thaiDate: string) => {
+        if (!thaiDate) return "";
+        const [day, month, thaiYear] = thaiDate.split("/");
+        const gregorianYear = parseInt(thaiYear) - 543;
+        return `${gregorianYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    };
+
     const handleProvinceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedProvince(event.target.value);
     };
 
-    const handleStadiumClick = () => {
-        router.push("/BadmintonCourt/reservation/stadium");
+    const handleStadiumClick = (stadiumId: number) => {
+        if (!userId) {
+            MySwal.fire("ข้อผิดพลาด", "กรุณาล็อกอินก่อนเลือกสนาม", "error");
+            return;
+        }
+        if (!selectedDate) {
+            MySwal.fire("ข้อผิดพลาด", "กรุณาเลือกวันที่จอง", "error");
+            return;
+        }
+
+        const isoDate = convertToISODate(selectedDate);
+        console.log('Data sent to next page:', { userId, stadiumId, bookingDate: isoDate }); // ตรวจสอบข้อมูลที่ส่ง
+        router.push(
+            `/BadmintonCourt/reservation/stadium?userId=${userId}&stadiumId=${stadiumId}&bookingDate=${isoDate}`
+        );
     };
 
     const handleShowFavorites = () => {
         const newShowFavorites = !showFavorites;
         setShowFavorites(newShowFavorites);
 
-        // ตรวจสอบว่ามีสนามที่ถูกใจหรือไม่หลังจากกรอง
         if (newShowFavorites) {
             const favoriteCourts = courts.filter(court => court.FavoriteID !== undefined);
             if (favoriteCourts.length === 0) {
@@ -238,7 +259,6 @@ const ReservationPage = () => {
         }
     };
 
-    // กรองสนามตาม showFavorites: ถ้า true และมีสนามที่ถูกใจ แสดงเฉพาะนั้น, ถ้าไม่มีให้แสดงทั้งหมด
     const displayedCourts = showFavorites && courts.some(court => court.FavoriteID !== undefined)
         ? courts.filter(court => court.FavoriteID !== undefined)
         : courts;
@@ -396,7 +416,7 @@ const ReservationPage = () => {
                                                 </div>
                                                 <button
                                                     className={`${styles.selectButton} bg-white text-[#1F9378] px-4 py-2 rounded-lg mt-4 self-start`}
-                                                    onClick={handleStadiumClick}
+                                                    onClick={() => handleStadiumClick(court.StadiumID)}
                                                 >
                                                     เลือก
                                                 </button>

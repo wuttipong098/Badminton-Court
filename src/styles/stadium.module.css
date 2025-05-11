@@ -50,13 +50,13 @@
     border: 1px solid #ccc;
     text-align: center;
     background-color: white;
-    color: #000000; /* เพิ่มสีของข้อความใน input ให้เป็นสีดำเข้ม */
+    color: #000000;
 }
 
 /* ปรับสี placeholder ให้เข้มขึ้นเป็นสีดำ */
 .inputday::placeholder {
-    color: #000000; /* สีดำ */
-    opacity: 1; /* ป้องกันเบราว์เซอร์ลด opacity */
+    color: #000000;
+    opacity: 1;
 }
 
 /* สำหรับเบราว์เซอร์ที่ใช้ prefix เช่น Chrome, Safari */
@@ -122,7 +122,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    background-color: #D9D9D9;
+    background-color: #D9D9D9; /* เปลี่ยนกลับเป็นสีเทา #D9D9D9 */
     padding: 10px;
     border-radius: 8px;
     justify-content: flex-start;
@@ -139,7 +139,7 @@
     cursor: pointer;
     min-width: 80px;
     text-align: center;
-    transition: background-color 0.3s;
+    transition: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -150,12 +150,33 @@
     background-color: #379DD6;
 }
 
-.timebox:hover {
-    background-color: #2ea865;
+.timebox.booked,
+.timebox.inProgress {
+    transition: none;
+}
+
+.timebox.booked:hover {
+    background-color: #ff0000;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.timebox.inProgress:hover {
+    background-color: #d6d622;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 1;
 }
 
 .timebox.selected:hover {
-    background-color: #2980b9;
+    background-color: #379DD6;
+    opacity: 1;
+}
+
+.timebox:hover {
+    background-color: #3BBC7A;
+    opacity: 1;
 }
 
 .boldText {
@@ -169,3 +190,14 @@
     pointer-events: none;
 }
 
+.booked {
+    background-color: #ff0000; 
+    color: white;
+    cursor: not-allowed;
+}
+
+.inProgress {
+    background-color: #d6d622; 
+    color: white;
+    cursor: not-allowed;
+}
