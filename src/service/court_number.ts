@@ -17,8 +17,28 @@ function formatCourtResponse(courtData: { data: CourtNumber[] }): UserResponseMo
         PriceHour: courtItem.price_hour,
         Active: courtItem.active,
         BookingDate: courtItem.slots.length > 0
-          ? courtItem.slots[0].booking_date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/')
-          : '', // "DD/MM/YYYY" in Gregorian calendar
+          ? (() => {
+              const bookingDate = courtItem.slots[0].booking_date as Date | string;
+              if (bookingDate instanceof Date && !isNaN(bookingDate.getTime())) {
+                return bookingDate.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                }).replace(/\//g, '/');
+              }
+              if (typeof bookingDate === 'string') {
+                const date = new Date(bookingDate);
+                return date instanceof Date && !isNaN(date.getTime())
+                  ? date.toLocaleDateString('en-GB', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    }).replace(/\//g, '/')
+                  : '';
+              }
+              return ''; // กรณีอื่น ๆ
+            })()
+          : '',
         TimeSlots: courtItem.slots.map((slot: SlotTime) => ({
           StartTime: slot.start_time,
           EndTime: slot.end_time,

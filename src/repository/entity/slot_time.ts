@@ -8,8 +8,8 @@ export class SlotTime {
   @Column({ name: 'court_id', type: 'integer' })
   court_id!: number;
 
-  @Column({ name: 'booking_date', type: 'varchar', length: 100 })
-  booking_date!: string;
+  @Column({ name: 'booking_date', type: 'date' })
+  booking_date!: Date;
 
   @Column({ name: 'start_time', type: 'time' })
   start_time!: string;
