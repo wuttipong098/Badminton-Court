@@ -36,12 +36,13 @@ export async function getAllStadiums(params: SearchAccountParams): Promise<UserR
   }
 }
 
-export async function addFavorite(params: CreateAccountParams): Promise<ResponseModel> {
+export async function addFavorite(params: CreateAccountParams): Promise<ResponseModel & { FavoriteID?: number }> {
   try {
-    const savedFavorite = await stadiumRepo.insertFavorite(params);
+    const favoriteId = await stadiumRepo.insertFavorite(params);
     return {
       status_code: 201,
       status_message: 'เพิ่มรายการโปรดสำเร็จ',
+      FavoriteID: favoriteId,
     };
   } catch (error) {
     console.error('Error adding favorite:', error);
