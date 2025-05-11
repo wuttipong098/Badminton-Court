@@ -16,6 +16,5 @@ export class Status {
     (slot: any) => slot.status,
     { cascade: ['insert', 'update'], onDelete: 'SET NULL' }
   )
-  // Cascade insert/update for slots, set status_id to null when status is deleted
   slots!: any[];
 }

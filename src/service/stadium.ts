@@ -1,3 +1,4 @@
+// service/stadium.ts
 import { SearchAccountParams, CreateAccountParams, DeleteAccountParams } from '@/dto/request/stadium';
 import { stadiums, UserResponseModel, ResponseModel } from '@/dto/response/stadium';
 import { stadium } from '@/repository/entity/stadium';
@@ -15,6 +16,7 @@ function formatStadiumResponse(stadiumsData: { total: number; data: stadium[] })
       Location: stadium.location,
       ImageStadium: stadium.images?.map((img) => img.image_stadium).filter((img): img is string => !!img) ?? [],
       FavoriteID: stadium.favorites && stadium.favorites.length > 0 ? stadium.favorites[0].favorite_id : undefined,
+      PhoneNumber: stadium.user?.phone_number || '', // เพิ่ม phone_number จาก user
     })),
     total: stadiumsData.total,
   };

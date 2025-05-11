@@ -36,8 +36,8 @@ const ReservationPage = () => {
 
     useEffect(() => {
         const storedUserId = localStorage.getItem('userID');
-        console.log('Stored userID in localStorage:', storedUserId); // ตรวจสอบ userID
-        console.log('All localStorage data:', localStorage); // ดูข้อมูลทั้งหมดใน localStorage
+        console.log('Stored userID in localStorage:', storedUserId);
+        console.log('All localStorage data:', localStorage);
         if (storedUserId) {
             setUserId(parseInt(storedUserId, 10));
         } else {
@@ -236,7 +236,7 @@ const ReservationPage = () => {
         }
 
         const isoDate = convertToISODate(selectedDate);
-        console.log('Data sent to next page:', { userId, stadiumId, bookingDate: isoDate }); // ตรวจสอบข้อมูลที่ส่ง
+        console.log('Data sent to next page:', { userId, stadiumId, bookingDate: isoDate });
         router.push(
             `/BadmintonCourt/reservation/stadium?userId=${userId}&stadiumId=${stadiumId}&bookingDate=${isoDate}`
         );
@@ -360,7 +360,10 @@ const ReservationPage = () => {
                             <div className={styles.courtList}>
                                 {displayedCourts.length > 0 ? (
                                     displayedCourts.map((court) => (
-                                        <div key={court.StadiumID} className={`${styles.courtItem} bg-[#1F9378] p-4 rounded-lg shadow-md flex flex-row relative mb-5`}>
+                                        <div
+                                            key={court.StadiumID}
+                                            className={`${styles.courtItem} bg-[#1F9378] p-4 rounded-lg shadow-md flex flex-row relative mb-5`}
+                                        >
                                             <FaHeart
                                                 className={court.FavoriteID ? styles.favorite : styles.notFavorite}
                                                 size={30}
@@ -374,7 +377,10 @@ const ReservationPage = () => {
                                                     width={300}
                                                     height={200}
                                                     className="rounded-lg cursor-pointer"
-                                                    onClick={() => { setSelectedImage(getImageSrc(court.ImageStadium?.[0]) || '/default-image.jpg'); setShowModal(true); }}
+                                                    onClick={() => {
+                                                        setSelectedImage(getImageSrc(court.ImageStadium?.[0]) || '/default-image.jpg');
+                                                        setShowModal(true);
+                                                    }}
                                                 />
                                                 <div className="flex space-x-2 mt-2 ml-0">
                                                     {court.ImageStadium && court.ImageStadium.length > 0 ? (
@@ -386,7 +392,10 @@ const ReservationPage = () => {
                                                                 width={90}
                                                                 height={60}
                                                                 className="rounded-lg cursor-pointer"
-                                                                onClick={() => { setSelectedImage(getImageSrc(image) || '/default-image.jpg'); setShowModal(true); }}
+                                                                onClick={() => {
+                                                                    setSelectedImage(getImageSrc(image) || '/default-image.jpg');
+                                                                    setShowModal(true);
+                                                                }}
                                                             />
                                                         ))
                                                     ) : (
@@ -410,7 +419,7 @@ const ReservationPage = () => {
                                                     <p className="text-white mt-1">รหัสไปรษณีย์: 56000</p>
                                                     <p className="text-white flex items-center mt-1">
                                                         <FaPhone className="mr-2 text-red-500" />
-                                                        081-992-5780
+                                                        {court.PhoneNumber || 'ไม่ระบุเบอร์โทร'}
                                                     </p>
                                                     <p className="text-white mt-1">จำนวนสนาม : {court.CourtAll} สนาม</p>
                                                 </div>
@@ -434,7 +443,10 @@ const ReservationPage = () => {
             <div className={`${styles.footer} w-full h-35 bg-[#1F9378]`}></div>
 
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeModal}>
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    onClick={closeModal}
+                >
                     <div className="bg-white p-4 rounded-lg" onClick={(e) => e.stopPropagation()}>
                         <Image
                             src={selectedImage || '/default-image.jpg'}

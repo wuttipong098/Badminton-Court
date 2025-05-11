@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 
 @Entity({ name: 'users' })
 export class user {
@@ -20,9 +20,12 @@ export class user {
   @Column({ name: 'phone_number', type: 'varchar', length: 100 })
   phone_number!: string;
 
-  @Column({ name: "profile", type: "bytea", nullable: true})
+  @Column({ name: 'profile', type: 'bytea', nullable: true })
   profile: Buffer | null = null;
 
-  @Column({ name: "role_name", type: "varchar", length: 255 })
-  role_name: string = "";
+  @Column({ name: 'role_name', type: 'varchar', length: 255 })
+  role_name: string = '';
+
+  @OneToMany(() => require('./stadium').stadium, (stadium: any) => stadium.user)
+  stadiums!: any[];
 }

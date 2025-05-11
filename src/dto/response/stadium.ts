@@ -6,6 +6,7 @@ export interface stadiums {
     Location: string;
     ImageStadium?: string[];
     FavoriteID?: number;
+    PhoneNumber: string;
 }
 
 export interface UserResponseModel {
