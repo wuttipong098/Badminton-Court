@@ -1,6 +1,8 @@
 import { SearchAccountParams } from '@/dto/request/court';
-import { court as CourtResponse, UserResponseModel, } from '@/dto/response/court';
+import { court as CourtResponse, UserResponseModel } from '@/dto/response/court';
 import { CourtNumber } from '@/repository/entity/court_number';
+import { SlotTime } from '@/repository/entity/slot_time';
+import { Status } from '@/repository/entity/status';
 import * as courtRepo from '@/repository/action/court_number';
 
 function formatCourtResponse(courtData: { data: CourtNumber[] }): UserResponseModel {
@@ -14,13 +16,13 @@ function formatCourtResponse(courtData: { data: CourtNumber[] }): UserResponseMo
         CourtNumber: courtItem.court_number,
         PriceHour: courtItem.price_hour,
         Active: courtItem.active,
-        BookingDate: courtData.data.length > 0 && courtItem.slots.length > 0 
-          ? courtItem.slots[0].booking_date.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' }) 
-          : '',
-        TimeSlots: courtItem.slots.map((slot: any) => ({
+        BookingDate: courtItem.slots.length > 0
+          ? courtItem.slots[0].booking_date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '/')
+          : '', // "DD/MM/YYYY" in Gregorian calendar
+        TimeSlots: courtItem.slots.map((slot: SlotTime) => ({
           StartTime: slot.start_time,
           EndTime: slot.end_time,
-          StatusName: slot.status ? slot.status.status_name : '',
+          StatusName: slot.status instanceof Status ? slot.status.status_name : '',
         })),
       };
     }),
@@ -37,7 +39,7 @@ export async function getCourtDetails(params: SearchAccountParams): Promise<User
     console.error('Error fetching court details:', error);
     return {
       status_code: 500,
-      status_message: 'Failed to fetch court details',
+      status_message: `Failed to fetch court details: ${error instanceof Error ? error.message : 'Unknown error'}`,
       data: [],
       total: 0,
     };

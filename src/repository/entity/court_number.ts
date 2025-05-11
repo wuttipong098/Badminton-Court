@@ -1,18 +1,17 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
-import { SlotTime } from '@/repository/entity/slot_time';
 
 @Entity({ name: 'court' })
 export class CourtNumber {
-  @PrimaryGeneratedColumn({ name: 'court_id', type: 'int8' })
+  @PrimaryGeneratedColumn({ name: 'court_id', type: 'bigint' })
   court_id!: number;
 
-  @Column({ name: 'stadium_id', type: 'int4' })
+  @Column({ name: 'stadium_id', type: 'integer' })
   stadium_id!: number;
 
-  @Column({ name: 'court_number', type: 'int4' })
+  @Column({ name: 'court_number', type: 'integer' })
   court_number!: number;
 
-  @Column({ name: 'price_hour', type: 'int4' })
+  @Column({ name: 'price_hour', type: 'integer' })
   price_hour!: number;
 
   @Column({ name: 'active', type: 'varchar', length: 50 })
@@ -21,6 +20,11 @@ export class CourtNumber {
   @Column({ name: 'created_date', type: 'date' })
   created_date!: Date;
 
-  @OneToMany(() => SlotTime, (slot) => slot.court, { cascade: true })
-  slots!: SlotTime[];
+  @OneToMany(
+    () => require('./slot_time').SlotTime,
+    (slot: any) => slot.court,
+    { cascade: ['insert', 'update'], onDelete: 'CASCADE' }
+  )
+
+  slots!: any[];
 }

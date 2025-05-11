@@ -1,17 +1,15 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { CourtNumber } from '@/repository/entity/court_number';
-import { Status } from '@/repository/entity/status';
 
 @Entity({ name: 'slot_time' })
 export class SlotTime {
-  @PrimaryGeneratedColumn({ name: 'slot_time_id', type: 'int8' })
+  @PrimaryGeneratedColumn({ name: 'slot_time_id', type: 'bigint' })
   slot_time_id!: number;
 
-  @Column({ name: 'court_id', type: 'int4' })
+  @Column({ name: 'court_id', type: 'integer' })
   court_id!: number;
 
-  @Column({ name: 'booking_date', type: 'date' })
-  booking_date!: Date;
+  @Column({ name: 'booking_date', type: 'varchar', length: 100 })
+  booking_date!: string;
 
   @Column({ name: 'start_time', type: 'time' })
   start_time!: string;
@@ -19,20 +17,28 @@ export class SlotTime {
   @Column({ name: 'end_time', type: 'time' })
   end_time!: string;
 
-  @Column({ name: 'status_id', type: 'int4' })
+  @Column({ name: 'status_id', type: 'integer' })
   status_id!: number;
 
   @Column({ name: 'created_date', type: 'date' })
   created_date!: Date;
 
   @Column({ name: 'update_date', type: 'date', nullable: true })
-  update_date!: Date;
+  update_date!: Date | null;
 
-  @ManyToOne(() => CourtNumber, (court) => court.slots)
-  @JoinColumn({ name: 'court_id' })
-  court!: CourtNumber;
+  @ManyToOne(
+    () => require('./court_number').CourtNumber,
+    (court: any) => court.slots,
+    { onDelete: 'CASCADE' }
+  )
+  @JoinColumn({ name: 'court_id', referencedColumnName: 'court_id' })
+  court!: any;
 
-  @ManyToOne(() => Status, (status) => status.slots)
-  @JoinColumn({ name: 'status_id' })
-  status!: Status;
+  @ManyToOne(
+    () => require('./status').Status,
+    (status: any) => status.slots,
+    { onDelete: 'SET NULL' }
+  )
+  @JoinColumn({ name: 'status_id', referencedColumnName: 'status_id' })
+  status!: any;
 }
