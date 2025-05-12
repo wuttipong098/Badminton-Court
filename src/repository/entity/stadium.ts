@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
-import { user } from './login'; 
+import { user } from './login';
 
 @Entity({ name: 'stadium' })
 export class stadium {
@@ -9,7 +9,7 @@ export class stadium {
   @Column({ name: 'user_id', type: 'int4' })
   user_id!: number;
 
-  @ManyToOne(() => user, (user) => user.stadiums) 
+  @ManyToOne(() => user, (user) => user.stadiums)
   @JoinColumn({ name: 'user_id' })
   user!: user;
 
@@ -23,7 +23,7 @@ export class stadium {
   location: string = '';
 
   @Column({ name: 'image_slip', type: 'bytea', nullable: true })
-    image_slip: Buffer | null = null;
+  image_slip: Buffer | null = null;
 
   @OneToMany(() => require('./imageow').imageow, (image: any) => image.stadium, { cascade: true })
   images!: any[];

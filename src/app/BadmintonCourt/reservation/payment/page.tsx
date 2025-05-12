@@ -3,7 +3,6 @@
 import styles from '@/styles/payment.module.css';
 import Image from "next/image";
 import ball from "@/public/ball.png";
-import moneyslip from "@/public/moneyslip.jpg";
 import { FaCamera } from 'react-icons/fa';
 import { useState, useEffect, useRef } from "react";
 import Swal from 'sweetalert2';
@@ -27,6 +26,7 @@ interface BookingData {
 
 const PaymentPage = () => {
     const [imageFile, setImageFile] = useState<string | null>(null);
+    const [apiImageSlip, setApiImageSlip] = useState<string | null>(null); // State สำหรับ ImageSlip จาก API
     const [bookingData, setBookingData] = useState<BookingData | null>(null);
     const [stadiumName, setStadiumName] = useState<string>("ไม่ระบุสนาม");
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,13 +64,39 @@ const PaymentPage = () => {
         }
     };
 
-    // ดึงข้อมูลจาก localStorage และชื่อสนามเมื่อ component โหลด
+    // ฟังก์ชันดึง ImageSlip จาก API
+    const fetchImageSlip = async (stadiumId: string) => {
+        try {
+            const response = await fetch('/api/imageslip', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    StadiumID: parseInt(stadiumId),
+                }),
+            });
+
+            const result = await response.json();
+            if (result.status_code === 200 && result.data && result.data.length > 0 && result.data[0].ImageSlip) {
+                setApiImageSlip(result.data[0].ImageSlip); // เก็บ ImageSlip (base64) จาก API
+            } else {
+                setApiImageSlip(null); // ถ้าไม่มี ImageSlip
+            }
+        } catch (error) {
+            console.error('Error fetching ImageSlip:', error);
+            setApiImageSlip(null);
+        }
+    };
+
+    // ดึงข้อมูลจาก local-library และชื่อสนามเมื่อ component โหลด
     useEffect(() => {
         const data = localStorage.getItem('bookingData');
         if (data) {
             const parsedData: BookingData = JSON.parse(data);
             setBookingData(parsedData);
             fetchStadiumName(parsedData.stadiumId);
+            fetchImageSlip(parsedData.stadiumId); // เรียก API เพื่อดึง ImageSlip
         } else {
             MySwal.fire("ข้อผิดพลาด", "ไม่พบข้อมูลการจอง", "error");
         }
@@ -83,7 +109,6 @@ const PaymentPage = () => {
             reader.onload = () => {
                 if (reader.result) {
                     setImageFile(reader.result.toString().split(',')[1]);
-                    // ไม่เรียก handleSubmit เพื่อให้ผู้ใช้กด "ตกลง" เอง
                 }
             };
             reader.readAsDataURL(file);
@@ -91,12 +116,10 @@ const PaymentPage = () => {
     };
 
     const handleAttachSlip = () => {
-        // เรียก click บน input file เพื่อเปิด dialog เลือกไฟล์
         fileInputRef.current?.click();
     };
 
     const handleSubmit = () => {
-        // ตรวจสอบว่ามีการอัปโหลดสลิปหรือไม่
         if (!imageFile) {
             MySwal.fire({
                 title: 'ข้อผิดพลาด',
@@ -115,7 +138,6 @@ const PaymentPage = () => {
             confirmButtonText: 'ตกลง',
             confirmButtonColor: '#379DD6',
         }).then(() => {
-            // ล้าง localStorage หลังจองสำเร็จ
             localStorage.removeItem('bookingData');
         });
     };
@@ -137,7 +159,6 @@ const PaymentPage = () => {
                     'การจองของคุณถูกยกเลิกแล้ว',
                     'success'
                 );
-                // ล้าง localStorage หลังยกเลิก
                 localStorage.removeItem('bookingData');
             }
         });
@@ -160,7 +181,17 @@ const PaymentPage = () => {
                         <label>QR แสกนชำระเงิน</label>
                     </div>
                     <div className="flex justify-center">
-                        <Image src={moneyslip} alt="QR Code for Payment" width={300} height={400} />
+                        {apiImageSlip ? (
+                            <Image
+                                src={`data:image/jpeg;base64,${apiImageSlip}`}
+                                alt="QR Code for Payment"
+                                width={300}
+                                height={400}
+                                objectFit="contain"
+                            />
+                        ) : (
+                            <p className="text-gray-500">ไม่มี QR Code สำหรับสนามนี้</p>
+                        )}
                     </div>
                 </div>
                 <div className="bg-white p-6 rounded-lg shadow-xl w-full md:w-1/2 min-h-[600px]">
@@ -260,13 +291,13 @@ const PaymentPage = () => {
                 </div>
             </div>
             <div className="flex justify-start space-x-4 p-6 pl-136">
-                <button 
+                <button
                     className="bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
                     onClick={handleSubmit}
                 >
                     ตกลง
                 </button>
-                <button 
+                <button
                     className="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
                     onClick={handleCancel}
                 >

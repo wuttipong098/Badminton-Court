@@ -1,5 +1,5 @@
 import { getDbConnection } from '../db_connection';
-import { bookings, CourtNumber } from '../entity';
+import { bookings, CourtNumber, SlotTime } from '../entity';
 import { CreateAccountParams, Slot } from '@/dto/request/bookings';
 
 export const insertBooking = async (params: CreateAccountParams) => {
@@ -106,7 +106,7 @@ export const insertBooking = async (params: CreateAccountParams) => {
       newBooking.start_time = slot.StartTime.slice(0, 5);
       newBooking.end_time = slot.EndTime.slice(0, 5);
       newBooking.total_price = totalPrice;
-      newBooking.status_id = params.StatusID || 0;
+      newBooking.status_id = 3; // กำหนด status_id เป็น 3 เสมอ
       newBooking.booking_date = params.BookingDate || '';
       newBooking.created_date = new Date();
       newBooking.update_date = null;
@@ -116,6 +116,23 @@ export const insertBooking = async (params: CreateAccountParams) => {
 
     // บันทึก bookings
     const savedBookings = await manager.save(bookingsToInsert);
+
+    // อัปเดต status_id ในตาราง slot_time
+    for (const slot of slots) {
+      await manager.update(
+        SlotTime,
+        {
+          court_id: slot.CourtId,
+          booking_date: params.BookingDate,
+          start_time: slot.StartTime.slice(0, 5),
+          end_time: slot.EndTime.slice(0, 5),
+        },
+        {
+          status_id: 3,
+          update_date: new Date(),
+        }
+      );
+    }
 
     // ส่งคืน response
     results.push(

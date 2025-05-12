@@ -22,3 +22,4 @@ export interface CreateAccountParams {
 export interface DeleteAccountParams {
   FavoriteID?: number;
 }
+
