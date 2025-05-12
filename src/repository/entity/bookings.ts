@@ -26,6 +26,9 @@ export class bookings {
     @Column({ name: 'booking_date', type: 'date' })
     booking_date!: string;
 
+    @Column({ name: 'money_slip', type: 'bytea', nullable: true })
+    money_slip: Buffer | null = null;
+
     @Column({ name: 'created_date', type: 'date' })
     created_date!: Date;
 
