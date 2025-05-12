@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 interface TimeRange {
@@ -11,12 +11,19 @@ interface TimeRange {
 const BookingSettings = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const paramCourtId = searchParams.get("courtId");
+  const paramStadiumId = searchParams.get("stadiumId");
+
   const [courtId, setCourtId] = useState<number | null>(paramCourtId ? Number(paramCourtId) : null);
+  const [stadiumId, setStadiumId] = useState<number | null>(paramStadiumId ? Number(paramStadiumId) : null);
+  const [userId, setUserId] = useState<number | null>(null);
+
   const [startHour, setStartHour] = useState("");
   const [startMinute, setStartMinute] = useState("");
   const [endHour, setEndHour] = useState("");
   const [endMinute, setEndMinute] = useState("");
+
   const [timeRanges, setTimeRanges] = useState<TimeRange[]>([]);
   const [price, setPrice] = useState(0);
   const [paymentTime, setPaymentTime] = useState(0);
@@ -24,32 +31,72 @@ const BookingSettings = () => {
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   const minutes = ["00", "30"];
 
+  useEffect(() => {
+    const storedUserId = localStorage.getItem("userID");
+    if (storedUserId) {
+      setUserId(Number(storedUserId));
+    } else {
+      alert("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่");
+      router.push("/login");
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchCourtSetting = async () => {
+      if (!courtId || !stadiumId || !userId) return;
+
+      try {
+        const res = await fetch(`/api/BS/getCourtSetting?courtId=${courtId}&stadiumId=${stadiumId}&userId=${userId}`);
+        const result = await res.json();
+
+        if (result.success) {
+          setPrice(result.data.price || 0);
+          setPaymentTime(result.data.paymentTime || 0);
+          setTimeRanges(result.data.timeRanges || []);
+        } else {
+          console.warn("⚠️ โหลดข้อมูลไม่สำเร็จ:", result.message);
+        }
+      } catch (err) {
+        console.error("❌ Error loading court setting:", err);
+      }
+    };
+
+    fetchCourtSetting();
+  }, [courtId, stadiumId, userId]);
+
   const handleSave = async () => {
-    const storedUserId = localStorage.getItem("userID"); // 👈 หรือ Session/Cookie แล้วแต่คุณเก็บยังไง  
-    const userId = Number(storedUserId);
-  
+    if (!userId || !courtId || !stadiumId) {
+      alert("ข้อมูลไม่ครบถ้วน ไม่สามารถบันทึกได้");
+      return;
+    }
+
     const payload = {
       courtId,
       price,
       timeRanges,
       paymentTime,
-      userId, // ✅ แนบ userId มาด้วย
+      userId,
+      stadiumId,
     };
-  
-    const res = await fetch("/api/BS/bookingSettings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  
-    const data = await res.json();
-    if (res.ok) {
-      alert("บันทึกสำเร็จ!");
-    } else {
-      alert("เกิดข้อผิดพลาด: " + data.message);
+
+    try {
+      const res = await fetch("/api/BS/bookingSettings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("บันทึกสำเร็จ!");
+      } else {
+        alert("เกิดข้อผิดพลาด: " + data.message);
+      }
+    } catch (err) {
+      console.error("❌ Error saving settings:", err);
+      alert("เกิดข้อผิดพลาดในการบันทึก");
     }
   };
-  
 
   const addTimeRange = () => {
     if (startHour && startMinute && endHour && endMinute) {
@@ -74,13 +121,14 @@ const BookingSettings = () => {
         <h2 className="text-2xl font-bold text-green-700">
           ตั้งค่าการจองสำหรับสนามที่ {courtId}
         </h2>
-        <button 
+        <button
           className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
           onClick={() => router.push(`/BadmintonShop/booking`)}
         >
           ← กลับ
         </button>
       </div>
+
       {/* สนามที่ */}
       <fieldset className="mb-6 border border-gray-300 bg-white rounded-lg p-4">
         <legend className="text-lg font-semibold text-black px-2">การตั้งสนาม</legend>
