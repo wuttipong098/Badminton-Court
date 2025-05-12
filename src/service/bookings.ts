@@ -1,4 +1,4 @@
-import { CreateAccountParams } from '@/dto/request/bookings';
+import { CreateAccountParams, Slot } from '@/dto/request/bookings';
 import { Bookings, UserResponseModel, ResponseModel } from '@/dto/response/bookings';
 import { bookings } from '@/repository/entity';
 import * as bookingAction from '@/repository/action/bookings';
@@ -23,13 +23,9 @@ function formatBookingResponse(bookingsData: { total: number; data: bookings[] }
 
 export async function createBookingService(params: CreateAccountParams): Promise<ResponseModel> {
   try {
-    // ตรวจสอบว่าไม่มีค่าใดใน params เป็นค่าว่าง
+    // ตรวจสอบฟิลด์ที่จำเป็น
     const requiredFields = {
       UserID: params.UserID || 0,
-      CourtId: params.CourtId || 0,
-      StartTime: params.StartTime || '',
-      EndTime: params.EndTime || '',
-      TotalPrice: params.TotalPrice || 0,
       StatusID: params.StatusID || 0,
       BookingDate: params.BookingDate || '',
     };
@@ -37,34 +33,7 @@ export async function createBookingService(params: CreateAccountParams): Promise
     if (Object.values(requiredFields).some(value => !value || value === 0)) {
       return {
         status_code: 400,
-        status_message: 'กรุณากรอกข้อมูลให้ครบทุกช่อง',
-      };
-    }
-
-    // ตรวจสอบรูปแบบเวลา
-    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(requiredFields.StartTime) || !timeRegex.test(requiredFields.EndTime)) {
-      return {
-        status_code: 401,
-        status_message: 'รูปแบบเวลาไม่ถูกต้อง ต้องเป็น HH:MM',
-      };
-    }
-
-    // ตรวจสอบว่า EndTime ต้องมากกว่า StartTime
-    const start = new Date(`1970-01-01T${requiredFields.StartTime}:00`);
-    const end = new Date(`1970-01-01T${requiredFields.EndTime}:00`);
-    if (end <= start) {
-      return {
-        status_code: 402,
-        status_message: 'เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น',
-      };
-    }
-
-    // ตรวจสอบว่า TotalPrice ต้องมากกว่า 0
-    if (requiredFields.TotalPrice <= 0) {
-      return {
-        status_code: 403,
-        status_message: 'ราคารวมต้องมากกว่า 0',
+        status_message: 'กรุณากรอก UserID, StatusID, และ BookingDate ให้ครบ',
       };
     }
 
@@ -86,27 +55,87 @@ export async function createBookingService(params: CreateAccountParams): Promise
       };
     }
 
+    // ตรวจสอบ Slots หรือสล็อตเดียว
+    const slots: Slot[] = params.Slots
+      ? params.Slots
+      : params.CourtId && params.StartTime && params.EndTime
+      ? [{ CourtId: params.CourtId, StartTime: params.StartTime, EndTime: params.EndTime }]
+      : [];
+
+    if (slots.length === 0) {
+      return {
+        status_code: 400,
+        status_message: 'ต้องระบุอย่างน้อยหนึ่งสล็อต',
+      };
+    }
+
+    // ตรวจสอบรูปแบบและความถูกต้องของเวลาในแต่ละสล็อต
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    for (const slot of slots) {
+      if (!slot.CourtId || !slot.StartTime || !slot.EndTime) {
+        return {
+          status_code: 400,
+          status_message: 'CourtId, StartTime, และ EndTime ต้องไม่ว่างในทุกสล็อต',
+        };
+      }
+
+      if (!timeRegex.test(slot.StartTime) || !timeRegex.test(slot.EndTime)) {
+        return {
+          status_code: 401,
+          status_message: `รูปแบบเวลาไม่ถูกต้องในสล็อต ${slot.StartTime}-${slot.EndTime} ต้องเป็น HH:MM`,
+        };
+      }
+
+      const start = new Date(`1970-01-01T${slot.StartTime}:00`);
+      const end = new Date(`1970-01-01T${slot.EndTime}:00`);
+      if (end <= start) {
+        return {
+          status_code: 402,
+          status_message: `เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้นในสล็อต ${slot.StartTime}-${slot.EndTime}`,
+        };
+      }
+    }
+
     // เรียก insertBooking
     await bookingAction.insertBooking({
       ...params,
       UserID: requiredFields.UserID,
-      CourtId: requiredFields.CourtId,
-      StartTime: requiredFields.StartTime,
-      EndTime: requiredFields.EndTime,
-      TotalPrice: requiredFields.TotalPrice,
       StatusID: requiredFields.StatusID,
       BookingDate: requiredFields.BookingDate,
+      Slots: slots,
     });
 
     return {
       status_code: 200,
       status_message: 'สร้างการจองสำเร็จ',
     };
-  } catch (error) {
-    console.error('เกิดข้อผิดพลาดในการสร้างการจอง:', error);
+  } catch (error: any) {
+    console.error('เกิดข้อผิดพลาดในการสร้างการจอง:', error.message);
+    if (error.message.includes('CourtId is required') || error.message.includes('not found')) {
+      return {
+        status_code: 404,
+        status_message: error.message,
+      };
+    }
+    if (
+      error.message.includes('Invalid time format') ||
+      error.message.includes('StartTime and EndTime are required') ||
+      error.message.includes('EndTime must be greater than StartTime')
+    ) {
+      return {
+        status_code: 401,
+        status_message: error.message,
+      };
+    }
+    if (error.message.includes('Overlapping slots detected') || error.message.includes('overlaps with existing booking')) {
+      return {
+        status_code: 409,
+        status_message: error.message,
+      };
+    }
     return {
       status_code: 500,
-      status_message: 'ไม่สามารถสร้างการจองได้',
+      status_message: 'ไม่สามารถสร้างการจองได้: ' + error.message,
     };
   }
 }

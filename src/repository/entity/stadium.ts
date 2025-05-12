@@ -22,6 +22,9 @@ export class stadium {
   @Column({ name: 'location', type: 'varchar', length: 100 })
   location: string = '';
 
+  @Column({ name: 'image_slip', type: 'bytea', nullable: true })
+    image_slip: Buffer | null = null;
+
   @OneToMany(() => require('./imageow').imageow, (image: any) => image.stadium, { cascade: true })
   images!: any[];
 
