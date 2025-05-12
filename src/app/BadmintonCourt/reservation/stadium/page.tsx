@@ -118,22 +118,29 @@ const StadiumPage = () => {
             return;
         }
 
-        // กำหนดราคาคงที่ต่อสล็อต (สมมติ 200 บาทต่อชั่วโมง)
-        const pricePerSlot = 200;
-        const totalPrice = selectedTimeSlots.length * pricePerSlot;
+        // คำนวณราคาโดยใช้ PriceHour จาก court ของแต่ละสล็อต
+        const totalPrice = selectedTimeSlots.reduce((total, slot) => {
+            const court = courts.find(c => c.CourtNumber === slot.court);
+            const pricePerSlot = court ? court.PriceHour : 0; // ใช้ PriceHour หรือ 0 ถ้าไม่พบ
+            return total + pricePerSlot;
+        }, 0);
 
         // เตรียมข้อมูลสำหรับบันทึกลง localStorage
         const bookingData = {
             userId,
             stadiumId,
             bookingDate,
-            slots: selectedTimeSlots.map(slot => ({
-                courtId: slot.court,
-                slotTime: `${slot.StartTime.slice(0, 5)} - ${slot.EndTime.slice(0, 5)}`,
-                startTime: slot.StartTime,
-                endTime: slot.EndTime,
-                price: pricePerSlot,
-            })),
+            slots: selectedTimeSlots.map(slot => {
+                const court = courts.find(c => c.CourtNumber === slot.court);
+                const pricePerSlot = court ? court.PriceHour : 0; // ใช้ PriceHour สำหรับแต่ละสล็อต
+                return {
+                    courtId: slot.court,
+                    slotTime: `${slot.StartTime.slice(0, 5)} - ${slot.EndTime.slice(0, 5)}`,
+                    startTime: slot.StartTime,
+                    endTime: slot.EndTime,
+                    price: pricePerSlot,
+                };
+            }),
             total_price: totalPrice,
         };
 

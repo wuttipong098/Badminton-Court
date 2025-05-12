@@ -26,14 +26,13 @@ export async function createBookingService(params: CreateAccountParams): Promise
     // ตรวจสอบฟิลด์ที่จำเป็น
     const requiredFields = {
       UserID: params.UserID || 0,
-      StatusID: params.StatusID || 0,
       BookingDate: params.BookingDate || '',
     };
 
     if (Object.values(requiredFields).some(value => !value || value === 0)) {
       return {
         status_code: 400,
-        status_message: 'กรุณากรอก UserID, StatusID, และ BookingDate ให้ครบ',
+        status_message: 'กรุณากรอก UserID และ BookingDate ให้ครบ',
       };
     }
 
@@ -100,7 +99,6 @@ export async function createBookingService(params: CreateAccountParams): Promise
     await bookingAction.insertBooking({
       ...params,
       UserID: requiredFields.UserID,
-      StatusID: requiredFields.StatusID,
       BookingDate: requiredFields.BookingDate,
       Slots: slots,
     });

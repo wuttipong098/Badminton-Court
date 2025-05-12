@@ -1,18 +1,12 @@
-export interface stadiums {
+export interface SearchImageSlip {
     StadiumID: number;
-    UserID: number;
-    StadiumName: string;
-    CourtAll: number;
-    Location: string;
-    ImageStadium?: string[];
-    FavoriteID?: number;
-    PhoneNumber: string;
+    ImageSlip?: string | Buffer;
 }
 
 export interface UserResponseModel {
     status_code: number;
     status_message: string;
-    data: stadiums[];
+    data: SearchImageSlip[];
     total: number;
 }
 
@@ -20,5 +14,3 @@ export interface ResponseModel {
     status_code: number;
     status_message: string;
 }
-
-
