@@ -2,6 +2,7 @@ export interface TimeSlot {
   StartTime: string;
   EndTime: string;
   StatusName: string;
+  Price?: number;
 }
 
 export interface court {

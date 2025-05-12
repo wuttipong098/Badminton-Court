@@ -117,12 +117,31 @@ const StadiumPage = () => {
             MySwal.fire("ข้อผิดพลาด", "กรุณาเลือกสล็อตเวลาอย่างน้อยหนึ่งสล็อต", "error");
             return;
         }
-        // ส่งข้อมูลสล็อตที่เลือกไปยังหน้าชำระเงิน
-        router.push(
-            `/BadmintonCourt/reservation/payment?slots=${encodeURIComponent(
-                JSON.stringify(selectedTimeSlots)
-            )}&userId=${userId}&stadiumId=${stadiumId}&bookingDate=${bookingDate}`
-        );
+
+        // กำหนดราคาคงที่ต่อสล็อต (สมมติ 200 บาทต่อชั่วโมง)
+        const pricePerSlot = 200;
+        const totalPrice = selectedTimeSlots.length * pricePerSlot;
+
+        // เตรียมข้อมูลสำหรับบันทึกลง localStorage
+        const bookingData = {
+            userId,
+            stadiumId,
+            bookingDate,
+            slots: selectedTimeSlots.map(slot => ({
+                courtId: slot.court,
+                slotTime: `${slot.StartTime.slice(0, 5)} - ${slot.EndTime.slice(0, 5)}`,
+                startTime: slot.StartTime,
+                endTime: slot.EndTime,
+                price: pricePerSlot,
+            })),
+            total_price: totalPrice,
+        };
+
+        // บันทึกข้อมูลลง localStorage
+        localStorage.setItem('bookingData', JSON.stringify(bookingData));
+
+        // เปลี่ยนเส้นทางไปยังหน้าชำระเงิน
+        router.push('/BadmintonCourt/reservation/payment');
     };
 
     const handleTimeSlotClick = (slot: TimeSlot, courtIndex: number) => {
