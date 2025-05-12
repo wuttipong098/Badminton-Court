@@ -14,6 +14,7 @@ const MainPage = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null); // State for modal image
 
   useEffect(() => {
     const storedUserId = localStorage.getItem("userID");
@@ -117,7 +118,8 @@ const MainPage = () => {
                           alt="Court Image"
                           width={280}
                           height={150}
-                          className="rounded-lg object-cover"
+                          className="rounded-lg object-cover cursor-pointer"
+                          onClick={() => setSelectedImage(getImageSrc(displayedCourt.ImageStadium?.[0]))}
                         />
                       </div>
                       <div className="flex flex-col">
@@ -134,9 +136,10 @@ const MainPage = () => {
                               alt={`Court Image ${index + 2}`}
                               width={107}
                               height={40}
-                              className={`rounded-lg mb-1 object-cover ${
+                              className={`rounded-lg mb-1 object-cover cursor-pointer ${
                                 index === 1 ? "mt-[-2px]" : ""
                               }`}
+                              onClick={() => setSelectedImage(getImageSrc(image))}
                             />
                           ));
                         })()}
@@ -159,12 +162,6 @@ const MainPage = () => {
                           จำนวนสนาม : {displayedCourt.CourtAll} สนาม
                         </p>
                       </div>
-                      <button
-                        className="self-end mt-[-50px] bg-white text-[#1F9378] font-bold py-2 px-10 rounded-lg hover:bg-gray-100 transition cursor-pointer"
-                        onClick={() => alert(`เลือกสนาม ${displayedCourt.StadiumName}`)}
-                      >
-                        เลือก
-                      </button>
                     </div>
                   </div>
                 ) : (
@@ -192,6 +189,30 @@ const MainPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal for Image Viewing */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="bg-white p-4 rounded-lg" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={selectedImage}
+              alt="Enlarged Court Image"
+              width={600}
+              height={400}
+              className="rounded-lg"
+            />
+            <button
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+              onClick={() => setSelectedImage(null)}
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="absolute bottom-[-24px] left-0 w-full h-10 bg-[#1F9378]"></div>
     </div>

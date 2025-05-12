@@ -7,6 +7,7 @@ export interface Bookings {
   TotalPrice: number;
   StatusID: number;
   BookingDate: string;
+  MoneySlip?: string | Buffer;
 }
 
 export interface UserResponseModel {

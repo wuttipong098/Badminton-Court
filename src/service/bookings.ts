@@ -16,6 +16,7 @@ function formatBookingResponse(bookingsData: { total: number; data: bookings[] }
       TotalPrice: bookingData.total_price,
       StatusID: bookingData.status_id,
       BookingDate: bookingData.booking_date,
+      MoneySlip: bookingData.money_slip ? bookingData.money_slip.toString('base64') : undefined, // แปลง Buffer เป็น base64
     })),
     total: bookingsData.total,
   };
@@ -95,6 +96,20 @@ export async function createBookingService(params: CreateAccountParams): Promise
       }
     }
 
+    // ตรวจสอบ MoneySlip ถ้ามี
+    if (params.MoneySlip !== undefined && params.MoneySlip !== null && params.MoneySlip !== '') {
+      if (typeof params.MoneySlip === 'string') {
+        try {
+          Buffer.from(params.MoneySlip, 'base64'); // ตรวจสอบว่า base64 ถูกต้อง
+        } catch (e) {
+          return {
+            status_code: 400,
+            status_message: 'รูปแบบ base64 ของ MoneySlip ไม่ถูกต้อง',
+          };
+        }
+      }
+    }
+
     // เรียก insertBooking
     await bookingAction.insertBooking({
       ...params,
@@ -118,7 +133,8 @@ export async function createBookingService(params: CreateAccountParams): Promise
     if (
       error.message.includes('Invalid time format') ||
       error.message.includes('StartTime and EndTime are required') ||
-      error.message.includes('EndTime must be greater than StartTime')
+      error.message.includes('EndTime must be greater than StartTime') ||
+      error.message.includes('Invalid base64 string for MoneySlip')
     ) {
       return {
         status_code: 401,

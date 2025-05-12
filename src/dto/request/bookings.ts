@@ -13,6 +13,7 @@ export interface CreateAccountParams {
   TotalPrice?: number; 
   StatusID?: number;
   BookingDate?: string;
+  MoneySlip?: string | Buffer;
   Slots?: Slot[]; 
 }
 
