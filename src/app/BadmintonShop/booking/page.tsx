@@ -84,7 +84,7 @@ const CourtBooking = () => {
             <div className="flex justify-between items-center">
               <h2
                 className="text-lg font-semibold text-green-700 cursor-pointer hover:underline"
-                onClick={() => router.push(`/BadmintonShop/bookingSetting?courtId=${court.courtId}`)}
+                onClick={() => router.push(`/BadmintonShop/bookingSetting?courtId=${court.courtId}&stadiumId=${court.stadiumId}`)}
               >
                 สนามที่ {court.courtId}
               </h2>
