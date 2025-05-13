@@ -1,33 +1,55 @@
 import { getDbConnection } from '../db_connection';
-import { history } from '@/repository/entity/historys';
-import { SearchAccountParams } from '@/dto/request/historys';
-import { Like, Equal } from 'typeorm';
+import { bookings } from '@/repository/entity/bookings';
+import { UserResponseModel, historys } from '@/dto/response/historys';
+import { Equal } from 'typeorm';
 
-export const findUsers = async (params: SearchAccountParams) => {
-  const page = params.page || 1;
-  const pageSize = params.pageSize || 30;
-  const skip = (page - 1) * pageSize;
-  const order = params.sort ? { [params.sort.field]: params.sort.order } : undefined;
+export interface SearchHistoryParams {
+    UserID: number;
+    BookingDate?: string;
+    StatusID?: number;
+    Page?: number;
+    PageSize?: number;
+}
 
-  return await getDbConnection(async (manager) => {
-    const where = {
-      history_id: params.HistoryID ? Equal(Number(params.HistoryID)) : undefined,
-      user_id: params.UserID ? Equal(Number(params.UserID)) : undefined,
-      booking_date: params.BookingDate ? Equal(new Date(params.BookingDate)) : undefined, 
-      start_time: params.StartTime ? Like(`%${params.StartTime}%`) : undefined,
-      end_time: params.EndTime ? Like(`%${params.EndTime}%`) : undefined,
-      stadium_name: params.StadiumName ? Like(`%${params.StadiumName}%`) : undefined,
-      court_number: params.CourtNumber && !isNaN(Number(params.CourtNumber)) ? Equal(Number(params.CourtNumber)) : undefined,
-    };
+export const findBookingHistory = async (params: SearchHistoryParams): Promise<UserResponseModel> => {
+    return await getDbConnection(async (manager) => {
+        const where: any = {
+            user_id: Equal(Number(params.UserID)),
+            status_id: params.StatusID ? Equal(Number(params.StatusID)) : undefined,
+        };
 
-    const total = await manager.count(history, { where });
-    const users = await manager.find(history, {
-      where,
-      skip,
-      take: pageSize,
-      order,
+        if (params.BookingDate) {
+            const bookingDateFormatted = params.BookingDate.split('/').reverse().join('-');
+            where.booking_date = Equal(bookingDateFormatted);
+        }
+
+        const page = params.Page || 1;
+        const pageSize = params.PageSize || 10;
+        const skip = (page - 1) * pageSize;
+
+        const [bookingData, total] = await manager.findAndCount(bookings, {
+            where,
+            relations: ['court', 'court.stadium'], // ตรวจสอบว่า court และ court.stadium มี relation ใน entity
+            skip,
+            take: pageSize,
+            order: { booking_date: 'DESC', start_time: 'ASC' },
+        });
+
+        const data: historys[] = bookingData.map((booking) => ({
+            UserID: booking.user_id,
+            BookingDate: booking.booking_date,
+            StartTime: booking.start_time,
+            EndTime: booking.end_time,
+            StadiumName: booking.court?.stadium?.stadium_name || '', // ปลอดภัยจาก null/undefined
+            CourtNumber: booking.court?.court_number || 0,
+            StatusID: booking.status_id,
+        }));
+
+        return {
+            status_code: 200,
+            status_message: 'Success',
+            data,
+            total,
+        };
     });
-
-    return { total, data: users };
-  });
 };
