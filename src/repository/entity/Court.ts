@@ -13,7 +13,7 @@ export class Court {
   courtId!: number; 
 
   @Column({ name: 'time', type: 'text' })
-  start_time!: string;
+  time!: string;
 
   @Column({ name: 'price', type: 'text' })
   price!: string;

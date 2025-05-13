@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     const result = await getDbConnection(async (manager) => {
       const courts = await manager.find(Court, {
         where: { courtId, userId },
-        order: { start_time: "ASC" },
+        order: { time: "ASC" },
       });
       console.log("✅ userId:", userId);
       if (courts.length === 0) {
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
           price: courts[0].price,
           paymentTime: courts[0].paymentTime,
           timeRanges: courts.map((c) => {
-            const [start, end] = c.start_time.split(" - ");
+            const [start, end] = c.time.split(" - ");
             return { start, end };
           }),
         },

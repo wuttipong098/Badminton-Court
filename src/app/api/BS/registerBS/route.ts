@@ -15,7 +15,7 @@ export const PUT = async (req: Request) => {
     }
 
     const hashedPassword = await bcrypt.hash(Password, 10);
-    const location = `${Province}, ${District}`;
+    const location = `${CourtLocation} ${Province} ${District}`;
 
     await getDbConnection(async (manager) => {
       const newRegister = new registerB();
@@ -24,9 +24,8 @@ export const PUT = async (req: Request) => {
       newRegister.user_name = UserName;
       newRegister.password = hashedPassword;
       newRegister.phone_number = PhoneNumber;
-      newRegister.location = CourtLocation;
+      newRegister.location = location;
       newRegister.role_name = RoleName;
-      newRegister.court_location = location;
       newRegister.stadium_name = StadiumName;
 
       await manager.save(newRegister);

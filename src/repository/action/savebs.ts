@@ -1,6 +1,6 @@
 import { getDbConnection } from '../db_connection';
 import { Court } from '@/repository/entity/Court';
-import { stadiumBS } from '@/repository/entity/stadiumBS';
+import { stadium } from '@/repository/entity/stadium';
 import { SaveBookingSettingRequest } from '@/dto/request/savebs';
 import { SaveBookingSettingResponse } from '@/dto/response/savebs';
 
@@ -14,8 +14,8 @@ export async function saveOrUpdateBookingSettingsRepo(
 
   return await getDbConnection(async (manager) => {
     // ✅ ดึง stadium จาก userId
-    const stadium = await manager.findOne(stadiumBS, {
-      where: { userId: data.userId },
+    const stadiums = await manager.findOne(stadium, {
+      where: { user_id: data.userId },
     });
 
     if (!stadium) {
@@ -25,7 +25,7 @@ export async function saveOrUpdateBookingSettingsRepo(
       };
     }
 
-    const stadiumIdNum = stadium.stadiumId;
+    const stadiumIdNum = stadiums.stadium_id;
 
     await manager.delete(Court, { courtId: courtIdNum });
 
@@ -34,7 +34,7 @@ export async function saveOrUpdateBookingSettingsRepo(
       court.courtId = courtIdNum;
       court.stadiumId = stadiumIdNum;
       court.price = data.price.toString();
-      court.start_time = `${range.start} - ${range.end}`;
+      court.time = `${range.start} - ${range.end}`;
       court.paymentTime = data.paymentTime.toString();
       court.userId = data.userId;
       court.isBooked = 1;

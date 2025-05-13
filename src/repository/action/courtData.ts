@@ -19,7 +19,7 @@ export const getCourtData = async (userId: number) => {
   });
 
     // ดึงเวลาทั้งหมดจากสนามทั้งหมด (ไม่ซ้ำ)
-    const timeList = courts.map(c => c.start_time);
+    const timeList = courts.map(c => c.time);
     const timeSlots = [...new Set(timeList)].sort();
 
     // จัดกลุ่มตาม stadiumId + courtId
@@ -29,13 +29,13 @@ export const getCourtData = async (userId: number) => {
       );
       if (existing) {
         existing.slots.push(court.isBooked);
-        existing.timeSlots.push(court.start_time);
+        existing.timeSlots.push(court.time);
       } else {
         acc.push({
           stadiumId: court.stadiumId,
           courtId: court.courtId,
           slots: [court.isBooked],
-          timeSlots: [court.start_time],
+          timeSlots: [court.time],
         });
       }
       return acc;
