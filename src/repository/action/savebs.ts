@@ -37,7 +37,7 @@ export async function saveOrUpdateBookingSettingsRepo(
       court.start_time = `${range.start} - ${range.end}`;
       court.paymentTime = data.paymentTime.toString();
       court.userId = data.userId;
-      court.isBooked = false;
+      court.isBooked = 1;
       court.active = true;
 
       await manager.save(Court, court);
