@@ -34,4 +34,7 @@ export class bookings {
 
     @Column({ name: 'update_date', type: 'date', nullable: true })
     update_date!: Date | null;
+    
+    @Column({ name: 'time', type: 'date' })
+    time!: string;
 }

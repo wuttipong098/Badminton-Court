@@ -30,6 +30,12 @@ export class Court {
   @Column({ name: 'active', type: 'bool' })
   active!: boolean;
 
+  @Column({ name: 'start_time', type: 'time' })
+  start_time!: string;
+
+  @Column({ name: 'end_time', type: 'time' })
+  end_time!: string;
+
   @ManyToOne(() => Status, status => status.status_id, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'isBooked', referencedColumnName: 'status_id' })
   status!: any;
