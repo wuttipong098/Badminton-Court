@@ -7,10 +7,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SearchAccountParams } from "@/dto/request/historys";
 import { historys } from "@/dto/response/historys";
+import { FaSearch } from "react-icons/fa";
 
 const HistoryPage = () => {
     const router = useRouter();
     const [data, setData] = useState<historys[]>([]);
+    const [filteredData, setFilteredData] = useState<historys[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -34,6 +37,7 @@ const HistoryPage = () => {
                 const result = await response.json();
                 if (result.status_code === 200) {
                     setData(result.data);
+                    setFilteredData(result.data);
                 } else {
                     setErrorMessage(result.status_message || "ไม่สามารถดึงข้อมูลประวัติการจองได้");
                 }
@@ -48,6 +52,17 @@ const HistoryPage = () => {
         fetchData();
     }, [router]);
 
+    const handleSearch = () => {
+        if (searchQuery.trim() === "") {
+            setFilteredData(data);
+        } else {
+            const filtered = data.filter((booking) =>
+                booking.StadiumName.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setFilteredData(filtered);
+        }
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-gray-100">
             <div className="w-full h-35 bg-[#1F9378]">
@@ -59,7 +74,24 @@ const HistoryPage = () => {
                     </div>
                 </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 mb10">
+            <div className="flex-1 overflow-y-auto p-4 mb-10">
+                <div className={styles.searchContainer}>
+                    <div className={styles.search}>
+                        <FaSearch className={styles.searchIcon} size={20} />
+                        <input
+                            type="text"
+                            className={styles.insearch}
+                            placeholder="ชื่อสนามแบดมินตัน"
+                            id="stadium"
+                            name="stadium"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <button className={styles.buttons} onClick={handleSearch}>
+                            ค้นหา
+                        </button>
+                    </div>
+                </div>
                 {loading && <div className="text-gray-500 text-center mt-4">กำลังโหลด...</div>}
                 {errorMessage && <div className="text-red-500 text-center mt-4">{errorMessage}</div>}
                 {!loading && !errorMessage && (
@@ -70,8 +102,8 @@ const HistoryPage = () => {
                             <label className={styles.headtable}>ชื่อสถานที่</label>
                             <label className={styles.headtable}>สนามที่จอง</label>
                         </div>
-                        {data.length > 0 ? (
-                            data.map((booking, index) => (
+                        {filteredData.length > 0 ? (
+                            filteredData.map((booking, index) => (
                                 <div key={index} className={styles.rowtable}>
                                     <label className={styles.celltable}>{booking.BookingDate}</label>
                                     <label className={styles.celltable}>{`${booking.StartTime.slice(0, 5)} - ${booking.EndTime.slice(0, 5)}`}</label>

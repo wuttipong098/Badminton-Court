@@ -325,35 +325,8 @@ const PaymentPage = () => {
             แนบสลิปโอนเงิน
           </button>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-xl w-full md:w-1/2 min-h-[600px]">
-          <div className={styles.information1}>
-            <label className="text-lg font-semibold text-white bg-[#1F9378] px-4 py-2 rounded-t-lg">
-              ข้อมูลการโอนเงิน
-            </label>
-          </div>
-          <div className="mt-6 space-y-3 text-gray-800">
-            <p className="text-lg font-semibold mt-4">ชื่อบัญชีผู้โอน</p>
-            <p className="text-lg" style={{ color: '#1F9378' }}>
-              วุฒิพงษ์ กระชั้น
-            </p>
-            <p className="text-lg font-semibold mt-4">เวลาที่โอน</p>
-            <p className="text-lg" style={{ color: '#1F9378' }}>16:30</p>
-            <p className="text-lg font-semibold mt-4">วันที่โอน</p>
-            <p className="text-lg" style={{ color: '#1F9378' }}>
-              7 มีนาคม 2545
-            </p>
-            <p className="text-lg font-semibold mt-4">จำนวนเงิน</p>
-            <p className="text-lg" style={{ color: '#1F9378' }}>
-              {bookingData ? `${bookingData.total_price} บาท` : "0 บาท"}
-            </p>
-            <p className="text-lg font-semibold mt-4">โอนไปบัญชี</p>
-            <p className="text-lg" style={{ color: '#1F9378' }}>
-              วุฒิพงษ์ กระชั้น
-            </p>
-          </div>
-        </div>
       </div>
-      <div className="flex justify-start space-x-4 p-6 pl-136">
+      <div className="flex justify-center space-x-4 p-6">
         <button
           className="bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
           onClick={handleSubmit}
