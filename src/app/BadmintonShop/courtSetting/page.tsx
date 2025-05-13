@@ -1,46 +1,156 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../components/button';
 import { Card, CardContent } from '../components/card';
+import { fetchStadiumId } from '@/lib/stadiumId';
+
+type SettingResponse = {
+  status_code: number;
+  status_message: string;
+  data: {
+    locationMessages: string[];
+    bookingRules:     string[];
+    courtImages:      string[]; // base64 strings
+    slipImages:       string[]; // base64 strings
+  };
+};
+
+type ImgSrc = string | File
 
 export default function BadmintonBooking() {
-  const [messages, setMessages] = useState(Array(5).fill('ข้อความแสดงหน้าเว็บ'));
-  const [rules, setRules] = useState(Array(5).fill('กรุณาใส่ข้อความ'));
-
-  const [itemsPerPageMessages, setItemsPerPageMessages] = useState(5);
+  const [rules, setRules] = useState(Array(5).fill(''));
+  const [location, setLocation] = useState('');
   const [itemsPerPageRules, setItemsPerPageRules] = useState(5);
 
-  const [currentPageMessages, setCurrentPageMessages] = useState(0);
   const [currentPageRules, setCurrentPageRules] = useState(0);
 
-  const totalPagesMessages = Math.ceil(messages.length / itemsPerPageMessages);
   const totalPagesRules = Math.ceil(rules.length / itemsPerPageRules);
 
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState("");
-  const [images, setImages] = useState<File[]>([]);
+  const [courtImages, setCourtImages] = useState<File[]>([]);
+  const [slipImages, setSlipImages] = useState<File[]>([]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUploadCourt = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      setImages(prev => [...prev, ...selectedFiles]);
+      setCourtImages(prev => [...prev, ...selectedFiles]);
     }
   };
-  
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+
+  const handleImageUploadSlip = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // ถ้ามีสลิปอยู่แล้ว หยุดและแจ้งเตือน
+    if (slipImages.length >= 1) {
+      alert('สามารถอัปโหลดสลิปได้เพียง 1 รูป')
+      return;
+    }
+
+    // เอาแค่ไฟล์แรก
+    const file = files[0];
+    setSlipImages([file]);
   };
   
-  const addMessage = () => setMessages([...messages, 'ข้อความแสดงหน้าเว็บ']);
-  const removeMessage = (index: number) => {
-    setMessages(messages.filter((_, i) => i !== index));
+  const removeCourtImage = (index: number) => {
+    setCourtImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeSlipImage = (index: number) => {
+    setSlipImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const addRule = () => setRules([...rules, '']);
   const removeRule = (index: number) => {
     setRules(rules.filter((_, i) => i !== index));
   };
+
+  const handleSave = async () => {
+  const userId = localStorage.getItem("userID");
+  if (!userId) {
+    alert("ไม่พบข้อมูลผู้ใช้");
+    return;
+  }
+  let stadiumId: number;
+  try {
+    stadiumId = await fetchStadiumId(userId);
+  } catch (e) {
+    console.error(e);
+    return alert('โหลดสนามไม่สำเร็จ');
+  }
+
+  const courtImagesBase64 = await Promise.all(
+    courtImages.map((img) => convertToBase64(img))
+  )
+  const slipImagesBase64 = await Promise.all(
+    slipImages.map((img) => convertToBase64(img))
+  )
+
+  const formData = {
+    stadiumId,
+    userId: parseInt(userId),
+    location,
+    bookingRules: rules,
+    courtImages: courtImagesBase64,
+    slipImages: slipImagesBase64,
+  };
+
+  console.log('PAYLOAD:', formData);
+
+  const res = await fetch('/api/BS/saveSetting', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData),
+  });
+
+  const result = await res.json();
+  alert(result.status_message);
+};
+
+const convertToBase64 = (img: ImgSrc): Promise<string> => {
+  if (typeof img === 'string') {
+    return Promise.resolve(img)
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(img)   // img ที่นี่ รับประกันแล้วว่าเป็น File
+  })
+}
+async function loadSetting() {
+    try {
+      const userId = localStorage.getItem('userID');
+      if (!userId) throw new Error('Missing userID in localStorage');
+
+      // ต้องรู้ stadiumId ก่อน (เรียก fetchStadiumId)
+      const stadiumId = await fetchStadiumId(userId);
+
+      const res = await fetch('/api/BS/getSetting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: parseInt(userId), stadiumId }),
+      });
+
+      const json: SettingResponse = await res.json();
+      if (json.status_code !== 200) {
+        console.error('loadSetting error', json.status_message);
+        return;
+      }
+
+      // ได้ data มาแล้ว กำหนดลง state
+      setLocation(json.data.locationMessages[0] || '');
+      setRules(json.data.bookingRules);
+      setCourtImages(json.data.courtImages);
+      setSlipImages(json.data.slipImages);
+    } catch (err) {
+      console.error('fetch setting failed:', err);
+    }
+  }
+
+  useEffect(() => {
+    loadSetting();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white p-6 max-w-6xl mx-auto text-black">
@@ -49,56 +159,18 @@ export default function BadmintonBooking() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* ข้อความแสดงหน้าเว็บ */}
         <Card className="bg-white border">
-          <CardContent>
-            <h2 className="text-xl font-semibold mb-4 text-black">📢 ข้อความหน้าเว็บ</h2>
+        <CardContent>
+          <h2 className="text-xl font-semibold mb-4 text-black">📢 สถานที่</h2>
 
-            {/* ตัวเลือกจำนวนรายการต่อหน้า */}
-            <div className="mb-4 flex gap-2 text-black">
-              <span>แสดง:</span>
-              {[5, 10].map((num) => (
-                <Button
-                  key={num}
-                  onClick={() => setItemsPerPageMessages(num)}
-                  className={`px-3 py-1 ${itemsPerPageMessages === num ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}
-                >
-                  {num}
-                </Button>
-              ))}
-            </div>
-
-            {messages
-              .slice(currentPageMessages * itemsPerPageMessages, (currentPageMessages + 1) * itemsPerPageMessages)
-              .map((msg, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={msg}
-                    onChange={(e) => {
-                      const newMessages = [...messages];
-                      newMessages[currentPageMessages * itemsPerPageMessages + index] = e.target.value;
-                      setMessages(newMessages);
-                    }}
-                    className="flex-1 p-2 border rounded text-black"
-                  />
-                  <Button variant="destructive" onClick={() => removeMessage(currentPageMessages * itemsPerPageMessages + index)}>
-                    ลบ
-                  </Button>
-                </div>
-              ))}
-            <Button onClick={addMessage} className="mt-2">เพิ่ม</Button>
-
-            <div className="mt-4 flex justify-center gap-2 text-black">
-              <Button onClick={() => setCurrentPageMessages((prev) => Math.max(prev - 1, 0))} disabled={currentPageMessages === 0}>
-                ก่อนหน้า
-              </Button>
-              <span>หน้า {currentPageMessages + 1} / {totalPagesMessages}</span>
-              <Button onClick={() => setCurrentPageMessages((prev) => Math.min(prev + 1, totalPagesMessages - 1))} disabled={currentPageMessages === totalPagesMessages - 1}>
-                ถัดไป
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="w-full p-2 border rounded text-black"
+            placeholder="กรุณาใส่สถานที่"
+          />
+        </CardContent>
+      </Card>
         {/* กติกาในการจอง */}
         <Card className="bg-white border">
           <CardContent>
@@ -153,49 +225,98 @@ export default function BadmintonBooking() {
         </Card>
       </div>
       {/* รูปภาพสนามแบดมินตัน */}
-      <Card className="bg-white border mt-6">
+      <Card className="bg-white border">
         <CardContent>
-          <h2 className="text-xl font-semibold mb-4 text-black">🏸 รูปภาพสนามแบดมินตัน</h2>
+          <h2 className="text-xl font-semibold mb-4">🏸 รูปภาพสนามแบดมินตัน</h2>
 
-          {/* ปุ่มอัปโหลดรูป */}
-          <div className="flex items-center gap-4 mb-6">
+          {/* ปุ่มอัปโหลด */}
+          <div className="flex items-center gap-4 mb-4">
             <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
-              className="file:bg-blue-500 file:text-white file:px-4 file:py-2 file:rounded file:border-0 text-black"
+              type="file" accept="image/*" multiple
+              onChange={handleImageUploadCourt}
+              className="file:bg-blue-500 file:text-white file:px-4 file:py-2 file:rounded"
             />
             <span className="text-sm text-gray-500">เลือกรูปได้หลายไฟล์</span>
           </div>
 
-          {/* แสดงรูปภาพที่เลือก */}
-          {images.length > 0 ? (
+          {/* แสดงรูป */}
+          {courtImages.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {images.map((image, index) => (
-                <div key={index} className="relative group overflow-hidden rounded shadow hover:shadow-lg transition-shadow duration-200">
-                  <img
-                    src={URL.createObjectURL(image)}
-                    alt={`รูปที่ ${index + 1}`}
-                    className="w-full h-48 object-cover rounded"
-                  />
-                  <button
-                    onClick={() => removeImage(index)}
-                    className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white px-2 py-1 text-xs rounded shadow"
-                  >
-                    ลบ
-                  </button>
-                </div>
-              ))}
+              {courtImages.map((img, i) => {
+                // ถ้าเป็น string (base64) ก็ใช้ตรงๆ, ถ้าเป็น File ก็สร้าง URL
+                const src = typeof img === 'string'
+                  ? img
+                  : URL.createObjectURL(img)
+                return (
+                  <div key={i} className="relative rounded overflow-hidden shadow">
+                    <img
+                      src={src}
+                      alt={`Court ${i+1}`}
+                      className="w-full h-48 object-cover"
+                    />
+                    <button
+                      onClick={() => removeCourtImage(i)}
+                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white px-2 py-1 text-xs rounded"
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           ) : (
-            <p className="text-gray-500 text-sm">ยังไม่มีการเลือกรูป</p>
+            <p className="text-gray-500">ยังไม่มีการเลือกรูป</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* รูปภาพสลิป */}
+      <Card className="bg-white border">
+        <CardContent>
+          <h2 className="text-xl font-semibold mb-4">🧾 รูปภาพสลิป</h2>
+
+          <div className="flex items-center gap-4 mb-4">
+            <input
+              type="file" accept="image/*" multiple
+              onChange={handleImageUploadSlip}
+              className="file:bg-green-500 file:text-white file:px-4 file:py-2 file:rounded"
+            />
+            <span className="text-sm text-gray-500">เลือกรูปได้หลายไฟล์</span>
+          </div>
+
+          {slipImages.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {slipImages.map((img, i) => {
+                const src = typeof img === 'string'
+                  ? img
+                  : URL.createObjectURL(img)
+                return (
+                  <div key={i} className="relative rounded overflow-hidden shadow">
+                    <img
+                      src={src}
+                      alt={`Slip ${i+1}`}
+                      className="w-full h-48 object-cover"
+                    />
+                    <button
+                      onClick={() => removeSlipImage(i)}
+                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white px-2 py-1 text-xs rounded"
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-gray-500">ยังไม่มีการเลือกรูปสลิป</p>
           )}
         </CardContent>
       </Card>
       {/* ปุ่มบันทึก */}
-      <button className="w-full bg-blue-600 text-white py-3 rounded-lg text-lg font-bold hover:bg-blue-700 mt-6">
-          💾 บันทึกการตั้งค่า
+      <button 
+      onClick={handleSave}
+      className="w-full bg-blue-600 text-white py-3 rounded-lg text-lg font-bold hover:bg-blue-700 mt-6">
+        💾 บันทึกการตั้งค่า
       </button>
     </div>
   );
