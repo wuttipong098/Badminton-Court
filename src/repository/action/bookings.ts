@@ -111,6 +111,21 @@ export const insertBooking = async (params: CreateAccountParams) => {
       newBooking.created_date = new Date();
       newBooking.update_date = null;
 
+      // จัดการ MoneySlip
+      if (params.MoneySlip !== undefined && params.MoneySlip !== null && params.MoneySlip !== '') {
+        if (typeof params.MoneySlip === 'string') {
+          try {
+            newBooking.money_slip = Buffer.from(params.MoneySlip, 'base64');
+          } catch (e) {
+            throw new Error('Invalid base64 string for MoneySlip');
+          }
+        } else {
+          newBooking.money_slip = params.MoneySlip; // ถ้าเป็น Buffer อยู่แล้ว
+        }
+      } else {
+        newBooking.money_slip = null;
+      }
+
       bookingsToInsert.push(newBooking);
     }
 
@@ -145,6 +160,7 @@ export const insertBooking = async (params: CreateAccountParams) => {
         TotalPrice: savedBooking.total_price,
         StatusID: savedBooking.status_id,
         BookingDate: savedBooking.booking_date,
+        MoneySlip: savedBooking.money_slip ? savedBooking.money_slip.toString('base64') : undefined,
       }))
     );
 
@@ -155,25 +171,13 @@ export const insertBooking = async (params: CreateAccountParams) => {
 export const findBookingById = async (bookingId: number) => {
   return await getDbConnection(async (manager) => {
     const booking = await manager.findOne(bookings, { where: { booking_id: bookingId } });
-    if (booking) {
-      return {
-        ...booking,
-        start_time: booking.start_time ? booking.start_time.slice(0, 5) : '',
-        end_time: booking.end_time ? booking.end_time.slice(0, 5) : '',
-      };
-    }
-    return null;
+    return booking; // ส่งคืน bookings โดยตรง
   });
 };
 
 export const findBookings = async (params: any) => {
   return await getDbConnection(async (manager) => {
     const [data, total] = await manager.findAndCount(bookings, { where: params });
-    const formattedData = data.map((booking) => ({
-      ...booking,
-      start_time: booking.start_time ? booking.start_time.slice(0, 5) : '',
-      end_time: booking.end_time ? booking.end_time.slice(0, 5) : '',
-    }));
-    return { total, data: formattedData };
+    return { total, data }; // ส่งคืน bookings โดยตรง
   });
 };
