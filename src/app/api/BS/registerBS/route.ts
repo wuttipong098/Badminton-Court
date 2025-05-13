@@ -6,7 +6,7 @@ import bcrypt from 'bcrypt';
 export const PUT = async (req: Request) => {
   try {
     const body = await req.json();
-    const { FirstName, LastName, UserName, Password, PhoneNumber, Province, District, CourtLocation, RoleName } = body;
+    const { FirstName, LastName, UserName, Password, PhoneNumber, Province, District, CourtLocation, RoleName, StadiumName } = body;
 
     if (!FirstName || !LastName || !UserName || !Password || !PhoneNumber || !CourtLocation || !RoleName) {
       return new Response(JSON.stringify({ status_code: 400, status_message: 'Missing required fields' }), {
@@ -24,9 +24,10 @@ export const PUT = async (req: Request) => {
       newRegister.user_name = UserName;
       newRegister.password = hashedPassword;
       newRegister.phone_number = PhoneNumber;
-      newRegister.location = location;
+      newRegister.location = CourtLocation;
       newRegister.role_name = RoleName;
-      newRegister.court_location = CourtLocation;
+      newRegister.court_location = location;
+      newRegister.stadium_name = StadiumName;
 
       await manager.save(newRegister);
     });
