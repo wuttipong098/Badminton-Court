@@ -47,7 +47,7 @@ export async function loginUserService(params: LoginParams): Promise<{
         redirectPath = '/BadmintonCourt/new';
         break;
       case 'owner':
-        redirectPath = '/BadmintonShop';
+        redirectPath = '/BadmintonShop/reservation';
         break;
       default:
         redirectPath = '/';
