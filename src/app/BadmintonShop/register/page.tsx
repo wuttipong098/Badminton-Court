@@ -27,6 +27,7 @@ const RegisterPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
     const [role, setRole] = useState<"user" | "owner" | null>(null);
+    const [stadiumName, setstadiumName] = useState("");
 
     const handleRoleSelect = (selectedRole: "user" | "owner") => {
         if (selectedRole === "user") {
@@ -68,7 +69,8 @@ const RegisterPage = () => {
             PhoneNumber: phonenumber,
             Province: province, // Include province
             District: district, // Include district
-            CourtLocation: courtLocation, // Include court location
+            CourtLocation: courtLocation,
+            StadiumName: stadiumName,
             RoleName: role,
         };
 
@@ -256,6 +258,15 @@ const RegisterPage = () => {
                                 className="w-full p-1.5 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
                                 value={courtLocation}
                                 onChange={(e) => setCourtLocation(e.target.value)}
+                            />
+                        </div>
+                        <div className="mb-2">
+                            <input
+                                type="text"
+                                placeholder="ชื่อสนาม"
+                                className="w-full p-1.5 bg-gray-200 text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm"
+                                value={stadiumName}
+                                onChange={(e) => setstadiumName(e.target.value)}
                             />
                         </div>
                         <button
