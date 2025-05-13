@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 interface CourtItem {
   stadiumId: number;
   courtId: number;
-  slots: boolean[];
+  slots: number[]; // Reflect that slots are numbers
   timeSlots: string[];
 }
 
@@ -22,9 +22,12 @@ const CourtBooking = () => {
   };
 
   useEffect(() => {
+    const userId = localStorage.getItem("userID");
+    if (!userId) return;
+
     const fetchCourtData = async () => {
       try {
-        const res = await fetch("/api/BS/getCourtData");
+        const res = await fetch(`/api/BS/getCourtData?userId=${userId}`);
         const result = await res.json();
         if (result.success) {
           setCourts(result.data.courts.sort((a: CourtItem, b: CourtItem) => a.courtId - b.courtId));
@@ -49,12 +52,26 @@ const CourtBooking = () => {
     if (!window.confirm(`⚠️ คุณต้องการลบคอร์ทที่ ${courtId} ใช่หรือไม่?`)) return;
     try {
       await fetch(`/api/BS/deleteCourt?stadiumId=${stadiumId}&courtId=${courtId}`, { method: "DELETE" });
-  
+
       setCourts(prev => prev.filter(c => c.courtId !== courtId || c.stadiumId !== stadiumId));
       showMessage(`❌ ลบคอร์ทที่ ${courtId} สำเร็จ`);
     } catch (error) {
       console.error("❌ ลบคอร์ทไม่สำเร็จ", error);
       showMessage("❌ ลบคอร์ทล้มเหลว!");
+    }
+  };
+
+  // Function to determine slot color based on status
+  const getSlotColor = (status: number) => {
+    switch (status) {
+      case 1:
+        return "bg-green-500";  // Available
+      case 2:
+        return "bg-red-500";    // Booked
+      case 3:
+        return "bg-yellow-500"; // Pending
+      default:
+        return "bg-gray-500";   // Unknown status
     }
   };
 
@@ -97,16 +114,14 @@ const CourtBooking = () => {
             </div>
 
             <div className="grid grid-cols-5 gap-2 mt-2">
-            {court.slots.map((isBooked, index) => (
-              <button
-                key={index}
-                className={`px-4 py-2 rounded-md text-white font-bold ${
-                  isBooked ? "bg-red-500" : "bg-green-500"
-                }`}
-              >
-                {court.timeSlots[index] || `ช่วงที่ ${index + 1}`}
-              </button>
-            ))}
+              {court.slots.map((status, index) => (
+                <button
+                  key={index}
+                  className={`px-4 py-2 rounded-md text-white font-bold ${getSlotColor(status)}`}
+                >
+                  {court.timeSlots[index] || `ช่วงที่ ${index + 1}`}
+                </button>
+              ))}
             </div>
           </div>
         ))

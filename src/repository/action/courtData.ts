@@ -4,14 +4,19 @@ import { Court } from '@/repository/entity/Court';
 type CourtData = {
   stadiumId: number;
   courtId: number;
-  slots: boolean[];
+  slots: number[];
   timeSlots: string[];
 };
 
-export const getCourtData = async () => {
+export const getCourtData = async (userId: number) => {
   return await getDbConnection(async (manager) => {
     // ดึงข้อมูล Court ทั้งหมดที่ active
-    const courts = await manager.find(Court, { where: { active: true } });
+    const courts = await manager.find(Court, {
+  where: {
+    active: true,
+    userId: userId,
+  },
+  });
 
     // ดึงเวลาทั้งหมดจากสนามทั้งหมด (ไม่ซ้ำ)
     const timeList = courts.map(c => c.start_time);

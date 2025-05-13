@@ -65,10 +65,6 @@ const BookingSettings = () => {
   }, [courtId, stadiumId, userId]);
 
   const handleSave = async () => {
-    if (!userId || !courtId || !stadiumId) {
-      alert("ข้อมูลไม่ครบถ้วน ไม่สามารถบันทึกได้");
-      return;
-    }
 
     const payload = {
       courtId,

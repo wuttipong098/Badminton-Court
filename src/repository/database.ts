@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { history, Court, user, stadium, stadiumBS,imageow, favorite, image_owner, CourtNumber, SlotTime, Status, bookings } from '@/repository/entity'; // นำเข้าโมเดลที่ต้องการ
+import { history, Court, user, stadium, stadiumBS,imageow, favorite, image_owner, CourtNumber, SlotTime, Status, bookings  } from '@/repository/entity'; // นำเข้าโมเดลที่ต้องการ
 import {
   DATABASE_USERNAME,
   DATABASE_PASSWORD,
