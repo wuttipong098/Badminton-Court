@@ -1,8 +1,6 @@
-// repository/action/stadium.ts
 import { getDbConnection } from '../db_connection';
 import { stadium } from '@/repository/entity/stadium';
 import { favorite } from '@/repository/entity/favorite';
-import { user } from '@/repository/entity/login';
 import { SearchAccountParams, CreateAccountParams, DeleteAccountParams } from '@/dto/request/stadium';
 import { Like, Equal, Not, IsNull } from 'typeorm';
 

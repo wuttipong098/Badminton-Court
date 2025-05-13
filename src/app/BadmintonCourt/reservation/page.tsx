@@ -63,6 +63,14 @@ const ReservationPage = () => {
         return `data:image/jpeg;base64,${Buffer.from(image).toString('base64')}`;
     };
 
+    // ฟังก์ชันแปลงวันที่จาก DD/MM/YYYY (Thai) เป็น DD/MM/YYYY (Gregorian)
+    const convertToAPIDate = (thaiDate: string): string => {
+        if (!thaiDate) return "";
+        const [day, month, thaiYear] = thaiDate.split("/");
+        const gregorianYear = parseInt(thaiYear) - 543;
+        return `${day}/${month}/${gregorianYear}`;
+    };
+
     const fetchCourts = async (params: SearchAccountParams) => {
         setLoading(true);
         try {
@@ -97,6 +105,44 @@ const ReservationPage = () => {
             setErrorMessage("เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
         } finally {
             setLoading(false);
+        }
+    };
+
+    // ฟังก์ชันเรียก API /api/allsearch
+    const fetchStadiumBySlot = async (bookingDate: string, startTime: string) => {
+        try {
+            const response = await fetch('/api/allsearch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    BookingDate: bookingDate,
+                    StartTime: startTime,
+                }),
+            });
+
+            const result = await response.json();
+            if (result.status_code === 200 && result.data.length > 0) {
+                return result.data.map((item: { StadiumID: number }) => item.StadiumID);
+            } else {
+                MySwal.fire({
+                    icon: 'info',
+                    title: 'ไม่พบสนาม',
+                    text: result.status_message || 'ไม่มีสนามที่ว่างในวันที่และเวลาที่เลือก',
+                    confirmButtonText: 'ตกลง',
+                });
+                return [];
+            }
+        } catch (error) {
+            console.error('Error fetching stadium by slot:', error);
+            MySwal.fire({
+                icon: 'error',
+                title: 'ข้อผิดพลาด',
+                text: 'เกิดข้อผิดพลาดในการค้นหาสนาม',
+                confirmButtonText: 'ตกลง',
+            });
+            return [];
         }
     };
 
@@ -197,14 +243,47 @@ const ReservationPage = () => {
         fetchCourts(params);
     }, [selectedProvince, searchQuery, userId]);
 
-    const handleSearch = () => {
-        const params: SearchAccountParams = {
-            page: 1,
-            pageSize: 30,
-            StadiumName: searchQuery ? `%${searchQuery}%` : undefined,
-            Location: selectedProvince ? `%${selectedProvince}%` : undefined,
-        };
-        fetchCourts(params);
+    const handleSearch = async () => {
+        setLoading(true);
+        try {
+            // สร้างพารามิเตอร์สำหรับ fetchCourts
+            const params: SearchAccountParams = {
+                page: 1,
+                pageSize: 30,
+                Location: selectedProvince ? `%${selectedProvince}%` : undefined,
+                StadiumName: searchQuery ? `%${searchQuery}%` : undefined,
+            };
+
+            // เรียก fetchCourts เพื่อดึงข้อมูลสนามทั้งหมดตาม Location และ StadiumName
+            await fetchCourts(params);
+
+            // ถ้ามีการเลือกวันที่และเวลา ให้กรองสนามตาม SlotTime
+            if (selectedDate && selectedTime) {
+                const apiDate = convertToAPIDate(selectedDate);
+                const stadiumIds = await fetchStadiumBySlot(apiDate, selectedTime);
+
+                if (stadiumIds.length > 0) {
+                    // กรอง courts โดยใช้ StadiumID จาก fetchStadiumBySlot
+                    setCourts((prevCourts) =>
+                        prevCourts.filter((court) => stadiumIds.includes(court.StadiumID))
+                    );
+                } else {
+                    // ถ้าไม่มี StadiumID ที่ว่าง ให้ล้าง courts
+                    setCourts([]);
+                    MySwal.fire({
+                        icon: 'info',
+                        title: 'ไม่พบสนาม',
+                        text: 'ไม่มีสนามที่ว่างในวันที่และเวลาที่เลือก',
+                        confirmButtonText: 'ตกลง',
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error during search:', error);
+            setErrorMessage('เกิดข้อผิดพลาดในการค้นหา');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const formatThaiDate = (dateString: string) => {
@@ -310,11 +389,22 @@ const ReservationPage = () => {
                         />
                     </div>
                     <div className={styles.time}>
-                        <select value={selectedTime} onChange={(e) => setSelectedTime(e.target.value)}>
-                            <option value="" disabled>เวลา</option>
-                            <option>08:00</option>
-                            <option>09:00</option>
-                            <option>10:00</option>
+                        <select
+                            value={selectedTime}
+                            onChange={(e) => setSelectedTime(e.target.value)}
+                            className={styles.timeSelect}
+                        >
+                            <option value="" disabled>
+                                เวลา
+                            </option>
+                            {Array.from({ length: 24 }, (_, i) => {
+                                const hour = i.toString().padStart(2, '0');
+                                return (
+                                    <option key={hour} value={`${hour}:00`}>
+                                        {`${hour}:00`}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                 </div>
@@ -339,10 +429,83 @@ const ReservationPage = () => {
                     onChange={handleProvinceChange}
                 >
                     <option value="" disabled>จังหวัด</option>
+                    <option value="กระบี่">กระบี่</option>
                     <option value="กรุงเทพมหานคร">กรุงเทพมหานคร</option>
-                    <option value="เชียงใหม่">เชียงใหม่</option>
+                    <option value="กาญจนบุรี">กาญจนบุรี</option>
+                    <option value="กาฬสินธุ์">กาฬสินธุ์</option>
+                    <option value="กำแพงเพชร">กำแพงเพชร</option>
+                    <option value="ขอนแก่น">ขอนแก่น</option>
+                    <option value="จันทบุรี">จันทบุรี</option>
+                    <option value="ฉะเชิงเทรา">ฉะเชิงเทรา</option>
                     <option value="ชลบุรี">ชลบุรี</option>
+                    <option value="ชัยนาท">ชัยนาท</option>
+                    <option value="ชัยภูมิ">ชัยภูมิ</option>
+                    <option value="ชุมพร">ชุมพร</option>
+                    <option value="เชียงราย">เชียงราย</option>
+                    <option value="เชียงใหม่">เชียงใหม่</option>
+                    <option value="ตรัง">ตรัง</option>
+                    <option value="ตราด">ตราด</option>
+                    <option value="ตาก">ตาก</option>
+                    <option value="นครนายก">นครนายก</option>
+                    <option value="นครปฐม">นครปฐม</option>
+                    <option value="นครพนม">นครพนม</option>
+                    <option value="นครราชสีมา">นครราชสีมา</option>
+                    <option value="นครศรีธรรมราช">นครศรีธรรมราช</option>
+                    <option value="นครสวรรค์">นครสวรรค์</option>
+                    <option value="นนทบุรี">นนทบุรี</option>
+                    <option value="นราธิวาส">นราธิวาส</option>
+                    <option value="น่าน">น่าน</option>
+                    <option value="บึงกาฬ">บึงกาฬ</option>
+                    <option value="บุรีรัมย์">บุรีรัมย์</option>
+                    <option value="ปทุมธานี">ปทุมธานี</option>
+                    <option value="ประจวบคีรีขันธ์">ประจวบคีรีขันธ์</option>
+                    <option value="ปราจีนบุรี">ปราจีนบุรี</option>
+                    <option value="ปัตตานี">ปัตตานี</option>
+                    <option value="พระนครศรีอยุธยา">พระนครศรีอยุธยา</option>
+                    <option value="พังงา">พังงา</option>
+                    <option value="พัทลุง">พัทลุง</option>
+                    <option value="พิจิตร">พิจิตร</option>
+                    <option value="พิษณุโลก">พิษณุโลก</option>
+                    <option value="เพชรบุรี">เพชรบุรี</option>
+                    <option value="เพชรบูรณ์">เพชรบูรณ์</option>
+                    <option value="แพร่">แพร่</option>
+                    <option value="พะเยา">พะเยา</option>
+                    <option value="ภูเก็ต">ภูเก็ต</option>
+                    <option value="มหาสารคาม">มหาสารคาม</option>
+                    <option value="มุกดาหาร">มุกดาหาร</option>
+                    <option value="แม่ฮ่องสอน">แม่ฮ่องสอน</option>
+                    <option value="ยโสธร">ยโสธร</option>
+                    <option value="ยะลา">ยะลา</option>
+                    <option value="ร้อยเอ็ด">ร้อยเอ็ด</option>
+                    <option value="ระนอง">ระนอง</option>
+                    <option value="ระยอง">ระยอง</option>
+                    <option value="ราชบุรี">ราชบุรี</option>
+                    <option value="ลพบุรี">ลพบุรี</option>
+                    <option value="ลำปาง">ลำปาง</option>
+                    <option value="ลำพูน">ลำพูน</option>
+                    <option value="เลย">เลย</option>
+                    <option value="ศรีสะเกษ">ศรีสะเกษ</option>
+                    <option value="สกลนคร">สกลนคร</option>
+                    <option value="สงขลา">สงขลา</option>
+                    <option value="สตูล">สตูล</option>
+                    <option value="สมุทรปราการ">สมุทรปราการ</option>
+                    <option value="สมุทรสงคราม">สมุทรสงคราม</option>
+                    <option value="สมุทรสาคร">สมุทรสาคร</option>
+                    <option value="สระแก้ว">สระแก้ว</option>
+                    <option value="สระบุรี">สระบุรี</option>
+                    <option value="สิงห์บุรี">สิงห์บุรี</option>
                     <option value="สุโขทัย">สุโขทัย</option>
+                    <option value="สุพรรณบุรี">สุพรรณบุรี</option>
+                    <option value="สุราษฎร์ธานี">สุราษฎร์ธานี</option>
+                    <option value="สุรินทร์">สุรินทร์</option>
+                    <option value="หนองคาย">หนองคาย</option>
+                    <option value="หนองบัวลำภู">หนองบัวลำภู</option>
+                    <option value="อ่างทอง">อ่างทอง</option>
+                    <option value="อุดรธานี">อุดรธานี</option>
+                    <option value="อุตรดิตถ์">อุตรดิตถ์</option>
+                    <option value="อุทัยธานี">อุทัยธานี</option>
+                    <option value="อุบลราชธานี">อุบลราชธานี</option>
+                    <option value="อำนาจเจริญ">อำนาจเจริญ</option>
                 </select>
                 <FaHeart
                     className={showFavorites ? styles.favorite : styles.heartIcon}
