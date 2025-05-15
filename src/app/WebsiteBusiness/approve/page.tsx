@@ -244,7 +244,7 @@ const ApprovePage = () => {
                     </div>
                 </div>
             </div>
-            <div className="w-full h-20 bg-[#1F9378] fixed bottom-0 left-0 z-50"></div>
+            <div className="w-full h-10 bg-[#1F9378] fixed bottom-0 left-0 z-50"></div>
         </div>
     );
 };
