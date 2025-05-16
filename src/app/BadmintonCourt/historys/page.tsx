@@ -26,6 +26,18 @@ const formatDate = (isoDate: string | undefined): string => {
   }
 };
 
+// ฟังก์ชันแปลง StatusID เป็นข้อความสถานะ
+const formatStatus = (statusID: number | undefined): string => {
+  switch (statusID) {
+    case 3:
+      return 'รอการอนุมัติ';
+    case 2:
+      return 'จองสำเร็จแล้ว';
+    default:
+      return '-';
+  }
+};
+
 const HistoryPage = () => {
   const router = useRouter();
   const [data, setData] = useState<historys[]>([]);
@@ -168,6 +180,7 @@ const HistoryPage = () => {
               <label className={styles.headtable}>เวลาที่จอง</label>
               <label className={styles.headtable}>ชื่อสถานที่</label>
               <label className={styles.headtable}>สนามที่จอง</label>
+              <label className={styles.headtable}>สถานะ</label>
             </div>
             {filteredData.length > 0 ? (
               filteredData.map((booking, index) => (
@@ -182,6 +195,7 @@ const HistoryPage = () => {
                   <label className={styles.celltable}>
                     {booking.CourtNumber ? `สนามที่ ${booking.CourtNumber}` : '-'}
                   </label>
+                  <label className={styles.celltable}>{formatStatus(booking.StatusID)}</label>
                 </div>
               ))
             ) : (
