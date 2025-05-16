@@ -238,13 +238,14 @@ const PaymentPage = () => {
           </div>
         </div>
       </div>
-      <div className="flex flex-col md:flex-row justify-center items-start p-6 space-y-6 md:space-y-0 md:space-x-6">
-        <div className="bg-white p-4 rounded-lg shadow-xl w-full md:w-1/3 min-h-[600px]">
+      <div className="flex flex-col md:flex-row justify-center items-start p-6 space-x-0 md:space-x-6 space-y-6 md:space-y-0">
+        {/* QR Code Section */}
+        <div className="bg-white p-6 rounded-lg shadow-xl w-full md:w-1/3 min-h-[600px]">
           <div className={styles.QR}>
             <label>QR แสกนชำระเงิน</label>
           </div>
-          <div className="flex justify-center">
-            {apiImageSlip ? (
+          {apiImageSlip && (
+            <div className="flex justify-center mt-4">
               <Image
                 src={`data:image/jpeg;base64,${apiImageSlip}`}
                 alt="QR Code for Payment"
@@ -252,12 +253,12 @@ const PaymentPage = () => {
                 height={400}
                 objectFit="contain"
               />
-            ) : (
-              <p className="text-gray-500">ไม่มี QR Code สำหรับสนามนี้</p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-xl w-full md:w-1/2 min-h-[600px]">
+
+        {/* Booking Details Section */}
+        <div className="bg-white p-6 rounded-lg shadow-xl w-full md:w-1/3 min-h-[600px]">
           <div className={styles.information1}>
             <label>รายละเอียดการจอง</label>
           </div>
@@ -288,9 +289,9 @@ const PaymentPage = () => {
             </p>
           </div>
         </div>
-      </div>
-      <div className="flex flex-col md:flex-row justify-center items-start p-6 space-y-6 md:space-y-0 md:space-x-6">
-        <div className="bg-white p-4 rounded-lg shadow-xl w-full md:w-1/3 flex flex-col items-center min-h-[600px]">
+
+        {/* Upload Slip Section */}
+        <div className="bg-white p-4 rounded-lg shadow-xl w-full md:w-1/3 min-h-[600px] flex flex-col items-center">
           <div className="flex justify-center mt-4">
             <div
               className="relative w-[300px] h-[400px] border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer"
@@ -318,27 +319,29 @@ const PaymentPage = () => {
               />
             </div>
           </div>
-          <button
-            className="mt-4 bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
-            onClick={handleAttachSlip}
-          >
-            แนบสลิปโอนเงิน
-          </button>
+          <div className="flex flex-col items-center space-y-4 mt-4">
+            <button
+              className="bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
+              onClick={handleAttachSlip}
+            >
+              แนบสลิปโอนเงิน
+            </button>
+            <div className="flex justify-center space-x-4">
+              <button
+                className="bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
+                onClick={handleSubmit}
+              >
+                ตกลง
+              </button>
+              <button
+                className="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                onClick={handleCancel}
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="flex justify-center space-x-4 p-6">
-        <button
-          className="bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
-          onClick={handleSubmit}
-        >
-          ตกลง
-        </button>
-        <button
-          className="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-          onClick={handleCancel}
-        >
-          ยกเลิก
-        </button>
       </div>
     </div>
   );

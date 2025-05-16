@@ -178,7 +178,6 @@
     color: white;
 }
 
-/* ปุ่ม Dropdown */
 .dropdownButton {
     background: none;
     border: none;
@@ -190,4 +189,56 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+/* สไตล์สำหรับ dropdownContent */
+.dropdownContent {
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 15px;
+    border: 1px solid #b0b0b0;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+/* เมื่อ dropdown เปิด */
+.tableRow + .dropdownContent {
+    max-height: 200px; /* ปรับตามความสูงของเนื้อหา */
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* สไตล์สำหรับ location */
+.location {
+    background-color: #d3d3d3; /* พื้นหลังสีเทา */
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.imageSection {
+  font-size: 14px;
+  color: #333;
+}
+
+.imageContainer {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 5px 0;
+}
+
+.stadiumImage {
+  width: 150px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.dropdownTitle {
+  font-weight: bold;
+  margin-bottom: 5px;
 }
