@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { CourtNumber } from "./court_number"
 
 @Entity({ name: 'bookings' })
 export class bookings {
@@ -34,7 +35,8 @@ export class bookings {
 
     @Column({ name: 'update_date', type: 'date', nullable: true })
     update_date!: Date | null;
-    
-    @Column({ name: 'time', type: 'date' })
-    time!: string;
+
+    // @Column({ name: 'time', type: 'date' })
+    // time!: string;
+
 }
