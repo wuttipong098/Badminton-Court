@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDbConnection } from '@/repository/db_connection';
 import { stadium } from '@/repository/entity/stadium';
-import { bookingRule } from '@/repository/entity/bookingRule';
 import { imageow } from '@/repository/entity/imageow';
 
 export async function POST(request: Request) {
@@ -12,6 +11,8 @@ export async function POST(request: Request) {
       userId,
       location,
       bookingRules,
+      price,
+      payment_time,
       courtImages,
       slipImages
     } = body;
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
       }
 
       stad.location = location;
+      stad.price = price;
+      stad.paymentTime = payment_time;
 
       // ✅ แปลงภาพสลิปภาพแรกเป็น Buffer
       if (Array.isArray(slipImages) && slipImages.length > 0) {
@@ -49,20 +52,6 @@ export async function POST(request: Request) {
       }
 
       await stadRepo.save(stad);
-
-      //
-      // 3) Replace booking rules
-      //
-      const ruleRepo = manager.getRepository(bookingRule);
-      await ruleRepo.delete({ user_id: userId });
-
-      if (Array.isArray(bookingRules)) {
-        for (const rule of bookingRules) {
-          if (!rule) continue;
-          const ent = ruleRepo.create({ user_id: userId, stadiumId: stadiumId , rule_name: rule });
-          await ruleRepo.save(ent);
-        }
-      }
 
       //
       // 4) Replace court images

@@ -12,23 +12,20 @@ type SettingResponse = {
     locationMessages: string[];
     bookingRules:     string[];
     courtImages:      string[]; // base64 strings
-    slipImages:       string[]; // base64 strings
+    slipImages:       string[];
+    payment_time:     number[];
+    price:            number[]; // base64 strings
   };
 };
 
 type ImgSrc = string | File
 
 export default function BadmintonBooking() {
-  const [rules, setRules] = useState(Array(5).fill(''));
   const [location, setLocation] = useState('');
-  const [itemsPerPageRules, setItemsPerPageRules] = useState(5);
-
-  const [currentPageRules, setCurrentPageRules] = useState(0);
-
-  const totalPagesRules = Math.ceil(rules.length / itemsPerPageRules);
-
   const [courtImages, setCourtImages] = useState<File[]>([]);
   const [slipImages, setSlipImages] = useState<File[]>([]);
+  const [paymentTime, setPaymentTime] = useState(0);
+  const [price, setPrice] = useState(0);
 
   const handleImageUploadCourt = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -60,11 +57,6 @@ export default function BadmintonBooking() {
     setSlipImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const addRule = () => setRules([...rules, '']);
-  const removeRule = (index: number) => {
-    setRules(rules.filter((_, i) => i !== index));
-  };
-
   const handleSave = async () => {
   const userId = localStorage.getItem("userID");
   if (!userId) {
@@ -90,7 +82,8 @@ export default function BadmintonBooking() {
     stadiumId,
     userId: parseInt(userId),
     location,
-    bookingRules: rules,
+    price: price,
+    payment_time: paymentTime, 
     courtImages: courtImagesBase64,
     slipImages: slipImagesBase64,
   };
@@ -140,7 +133,8 @@ async function loadSetting() {
 
       // ได้ data มาแล้ว กำหนดลง state
       setLocation(json.data.locationMessages[0] || '');
-      setRules(json.data.bookingRules);
+      setPaymentTime(json.data.payment_time[0] || 0);
+      setPrice(json.data.price[0] || 0);
       setCourtImages(json.data.courtImages);
       setSlipImages(json.data.slipImages);
     } catch (err) {
@@ -175,52 +169,28 @@ async function loadSetting() {
         <Card className="bg-white border">
           <CardContent>
             <h2 className="text-xl font-semibold mb-4 text-black">📌 กติกาในการจอง</h2>
-
-            {/* ตัวเลือกจำนวนรายการต่อหน้า */}
-            <div className="mb-4 flex gap-2 text-black">
-              <span>แสดง:</span>
-              {[5, 10].map((num) => (
-                <Button
-                  key={num}
-                  onClick={() => setItemsPerPageRules(num)}
-                  className={`px-3 py-1 ${itemsPerPageRules === num ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'}`}
-                >
-                  {num}
-                </Button>
-              ))}
-            </div>
-
-            {rules
-              .slice(currentPageRules * itemsPerPageRules, (currentPageRules + 1) * itemsPerPageRules)
-              .map((rule, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={rule}
-                    onChange={(e) => {
-                      const newRules = [...rules];
-                      newRules[currentPageRules * itemsPerPageRules + index] = e.target.value;
-                      setRules(newRules);
-                    }}
-                    className="flex-1 p-2 border rounded text-black"
-                    placeholder="กรุณาใส่ข้อความ"
-                  />
-                  <Button variant="destructive" onClick={() => removeRule(currentPageRules * itemsPerPageRules + index)}>
-                    ลบ
-                  </Button>
-                </div>
-              ))}
-            <Button onClick={addRule} className="mt-2">เพิ่ม</Button>
-
-            <div className="mt-4 flex justify-center gap-2 text-black">
-              <Button onClick={() => setCurrentPageRules((prev) => Math.max(prev - 1, 0))} disabled={currentPageRules === 0}>
-                ก่อนหน้า
-              </Button>
-              <span>หน้า {currentPageRules + 1} / {totalPagesRules}</span>
-              <Button onClick={() => setCurrentPageRules((prev) => Math.min(prev + 1, totalPagesRules - 1))} disabled={currentPageRules === totalPagesRules - 1}>
-                ถัดไป
-              </Button>
-            </div>
+            {/* ชำระเงินภายใน */}
+            <fieldset className="mb-6 border border-gray-300 bg-white rounded-lg p-4">
+              <legend className="text-lg font-semibold text-black px-2">💳 การชำระเงิน</legend>
+              <label className="block text-black font-medium">ชำระเงินภายใน (นาที):</label>
+              <input
+                type="number"
+                className="border p-2 w-full mt-1 text-black bg-white"
+                value={paymentTime}
+                onChange={(e) => setPaymentTime(Number(e.target.value))}
+              />
+            </fieldset>
+            {/* ราคา */}
+              <fieldset className="mb-6 border border-gray-300 bg-white rounded-lg p-4">
+                <legend className="text-lg font-semibold text-black px-2">💰 การตั้งค่าราคา</legend>
+                <label className="block mt-2 text-black font-medium">ราคาจอง (บาท):</label>
+                <input
+                  type="number"
+                  className="border p-2 w-full mt-1 text-black bg-white"
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                />
+              </fieldset>
           </CardContent>
         </Card>
       </div>

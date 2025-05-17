@@ -25,6 +25,12 @@ export class stadium {
   @Column({ name: 'image_slip', type: 'bytea', nullable: true })
   image_slip: Buffer | null = null;
 
+  @Column({ name: 'price', type: 'text' })
+  price!: string;
+
+  @Column({ name: 'paymenttime', type: 'text' })
+  paymentTime!: string;
+
   @OneToMany(() => require('./imageow').imageow, (image: any) => image.stadium, { cascade: true })
   images!: any[];
 
