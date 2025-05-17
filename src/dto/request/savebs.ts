@@ -11,5 +11,8 @@ export interface TimeRange {
     timeRanges: TimeRange[];
     paymentTime: number;
     userId: number;
+    active: boolean;
+    startTime: string;
+    endTime: string;
   }
   

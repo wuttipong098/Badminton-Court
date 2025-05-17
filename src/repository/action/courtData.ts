@@ -13,7 +13,6 @@ export const getCourtData = async (userId: number) => {
     // ดึงข้อมูล Court ทั้งหมดที่ active
     const courts = await manager.find(Court, {
   where: {
-    active: true,
     userId: userId,
   },
   });
