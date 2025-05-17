@@ -1,7 +1,7 @@
 // app/api/BS/getStadiumId/route.ts
 import { NextResponse } from 'next/server';
 import { getDbConnection } from '@/repository/db_connection';
-import { stadium }        from '@/repository/entity/stadium';
+import { stadium } from '@/repository/entity/stadium';
 
 export async function GET(request: Request) {
   try {

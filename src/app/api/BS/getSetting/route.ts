@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server'
 import { getDbConnection } from '@/repository/db_connection'
 import { stadium } from '@/repository/entity/stadium'
-import { bookingRule } from '@/repository/entity/bookingRule'
 import { imageow } from '@/repository/entity/imageow'
 
 export async function POST(request: Request) {
@@ -22,6 +21,8 @@ export async function POST(request: Request) {
       slipImages:       string[]
       courtImages:      string[]
       bookingRules:     string[]
+      payment_time:     string[]
+      price:            string[]
     }
 
     let result: BookingSettingData = {
@@ -29,6 +30,8 @@ export async function POST(request: Request) {
       slipImages:       [],
       courtImages:      [],
       bookingRules:     [],
+      payment_time:     [],
+      price:            [],
     }
 
     await getDbConnection(async (manager) => {
@@ -54,16 +57,18 @@ export async function POST(request: Request) {
             `data:image/jpeg;base64,${stad.image_slip.toString('base64')}`
           ]
         }
-      }
+        result.payment_time = Array.isArray(stad.paymentTime)
+          ? stad.paymentTime
+          : typeof stad.paymentTime === 'string'
+            ? [stad.paymentTime]
+            : []
 
-      //
-      // 2) ดึง booking rules
-      //
-      const ruleRepo = manager.getRepository(bookingRule)
-      const rules = await ruleRepo.find({
-        where: { user_id: userId }, // ไม่ต้องกรอง stadium_id ถ้า schema ไม่มี field นี้
-      })
-      result.bookingRules = rules.map((r) => r.rule_name)
+        result.price = Array.isArray(stad.price)
+          ? stad.price
+          : typeof stad.price === 'string'
+            ? [stad.price]
+            : []
+      }
 
       //
       // 3) ดึง court images
