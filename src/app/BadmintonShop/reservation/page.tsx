@@ -7,21 +7,22 @@ import { Calendar as CalendarIcon } from "lucide-react";
 interface CourtItem {
   stadiumId: number;
   courtId: number;
-  slots: number[];       // 1=available,2=booked,3=pending
-  timeSlots: string[];   // label per slot
+  slots: number[]; // 1=available, 2=booked, 3=pending
+  timeSlots: string[]; // label per slot
 }
 
 const CourtBooking = () => {
   const router = useRouter();
 
   // state
-  const [courts, setCourts]               = useState<CourtItem[]>([]);
+  const [courts, setCourts] = useState<CourtItem[]>([]);
   const [selectedSlots, setSelectedSlots] = useState<Record<string, number[]>>({});
-  const [bookingDate, setBookingDate]     = useState(() => {
+  const [bookingDate, setBookingDate] = useState(() => {
     const today = new Date();
     return today.toISOString().split("T")[0];
   });
-  const [message, setMessage]             = useState("");
+  const [message, setMessage] = useState("");
+  const [isBooking, setIsBooking] = useState(false);
 
   // helper: toast message
   const showMessage = (txt: string) => {
@@ -29,37 +30,59 @@ const CourtBooking = () => {
     setTimeout(() => setMessage(""), 2000);
   };
 
-  // fetch courts once
+  // fetch courts when bookingDate changes
   useEffect(() => {
     const userId = localStorage.getItem("userID");
-    if (!userId) return;
+    console.log("Fetching with: userId =", userId, "bookingDate =", bookingDate);
+
+    if (!userId) {
+      showMessage("⚠️ กรุณาล็อกอิน");
+      router.push("/login");
+      return;
+    }
+
+    if (!bookingDate) {
+      showMessage("⚠️ กรุณาเลือกวันที่");
+      setCourts([]);
+      return;
+    }
 
     (async () => {
       try {
-        const res  = await fetch(`/api/BS/getCourtData?userId=${userId}`);
+        const res = await fetch(
+          `/api/BS/getDataReservation?userId=${encodeURIComponent(userId)}&bookingDate=${encodeURIComponent(bookingDate)}`
+        );
         const json = await res.json();
+        console.log("API Response:", json);
         if (!json.success) {
-          showMessage("⚠️ โหลดข้อมูลไม่สำเร็จ");
+          showMessage(json.message || "⚠️ โหลดข้อมูลไม่สำเร็จ");
+          setCourts([]);
           return;
         }
         const sorted = json.data.courts.sort(
           (a: CourtItem, b: CourtItem) => a.courtId - b.courtId
         );
+        console.log("Sorted Courts:", sorted); // Debug log
         setCourts(sorted);
       } catch (err) {
-        console.error(err);
+        console.error("Fetch error:", err);
         showMessage("❌ โหลดข้อมูลล้มเหลว");
+        setCourts([]);
       }
     })();
-  }, []);
+  }, [bookingDate, router]);
 
   // สีพื้นหลังของ slot ตามสถานะ
   const getSlotColor = (status: number) => {
     switch (status) {
-      case 1: return "bg-green-500";   // available
-      case 2: return "bg-red-500";     // booked
-      case 3: return "bg-yellow-500";  // pending
-      default: return "bg-gray-500";
+      case 1:
+        return "bg-green-500"; // available
+      case 2:
+        return "bg-red-500"; // booked
+      case 3:
+        return "bg-yellow-500"; // pending
+      default:
+        return "bg-gray-500";
     }
   };
 
@@ -68,19 +91,19 @@ const CourtBooking = () => {
     if (court.slots[idx] !== 1) return; // เฉพาะ available
     const key = `${court.stadiumId}-${court.courtId}`;
     const prev = selectedSlots[key] || [];
-    const next = prev.includes(idx)
-      ? prev.filter(i => i !== idx)
-      : [...prev, idx];
+    const next = prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx];
 
     setSelectedSlots({
       ...selectedSlots,
-      [key]: next
+      [key]: next,
     });
   };
 
   // นับรวมจำนวน slot ที่เลือกได้ทั้งหมด
-  const totalSelected = Object.values(selectedSlots)
-    .reduce((sum, arr) => sum + arr.length, 0);
+  const totalSelected = Object.values(selectedSlots).reduce(
+    (sum, arr) => sum + arr.length,
+    0
+  );
 
   // กดปุ่ม จอง (รวมทุกสนาม)
   const bookAll = async () => {
@@ -89,36 +112,43 @@ const CourtBooking = () => {
       return;
     }
 
-    const userId = Number(localStorage.getItem("userID"));
-    
-    try {
+    if (isBooking) {
+      showMessage("⏳ กำลังดำเนินการจอง...");
+      return;
+    }
 
-      const res  = await fetch("/api/BS/bookMultipleCourts", {
+    const userId = localStorage.getItem("userID");
+    if (!userId) {
+      showMessage("⚠️ กรุณาล็อกอิน");
+      router.push("/login");
+      return;
+    }
+
+    setIsBooking(true);
+    try {
+      const res = await fetch("/api/BS/bookMultipleCourts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId,
+          userId: Number(userId),
           bookingDate,
-          selections: Object.entries(selectedSlots).map(
-            ([key, slots]) => {
-              const [stadiumId, courtId] = key.split("-").map(Number);
-              return { stadiumId, courtId, slots };
-            }
-          )
-        })
+          selections: Object.entries(selectedSlots).map(([key, slots]) => {
+            const [stadiumId, courtId] = key.split("-").map(Number);
+            return { stadiumId, courtId, slots };
+          }),
+        }),
       });
       const json = await res.json();
 
       if (json.success) {
         showMessage("✅ จองสำเร็จทั้งหมด");
-        // update local state: mark booked
-        setCourts(cs =>
-          cs.map(c => {
+        setCourts((cs) =>
+          cs.map((c) => {
             const key = `${c.stadiumId}-${c.courtId}`;
             const slotsToBook = selectedSlots[key] || [];
             if (slotsToBook.length > 0) {
               const newSlots = [...c.slots];
-              slotsToBook.forEach(i => newSlots[i] = 2);
+              slotsToBook.forEach((i) => (newSlots[i] = 2));
               return { ...c, slots: newSlots };
             }
             return c;
@@ -126,11 +156,13 @@ const CourtBooking = () => {
         );
         setSelectedSlots({});
       } else {
-        showMessage("❌ จองไม่สำเร็จ");
+        showMessage(json.message || "❌ จองไม่สำเร็จ");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Book error:", err);
       showMessage("❌ เกิดข้อผิดพลาด");
+    } finally {
+      setIsBooking(false);
     }
   };
 
@@ -147,9 +179,7 @@ const CourtBooking = () => {
       )}
 
       {/* header */}
-      <h1 className="text-2xl font-bold text-green-700 mb-4">
-        Badminton Court Booking
-      </h1>
+      <h1 className="text-2xl font-bold text-green-700 mb-4">Badminton Court Booking</h1>
 
       {/* เลือกวันที่ + ปุ่มจอง */}
       <div className="flex justify-between items-end mb-6">
@@ -162,43 +192,54 @@ const CourtBooking = () => {
             type="date"
             className="border p-2 rounded-lg text-black"
             value={bookingDate}
-            onChange={e => setBookingDate(e.target.value)}
+            min={new Date().toISOString().split("T")[0]}
+            required
+            onChange={(e) => setBookingDate(e.target.value)}
           />
         </div>
         <button
           onClick={bookAll}
-          disabled={totalSelected === 0}
+          disabled={totalSelected === 0 || isBooking}
           className={`px-6 py-3 rounded-md text-white font-bold ${
-            totalSelected > 0
+            totalSelected > 0 && !isBooking
               ? "bg-blue-600 hover:bg-blue-700"
               : "bg-gray-400 cursor-not-allowed"
           }`}
         >
-          จอง ({totalSelected})
+          {isBooking ? "กำลังจอง..." : `จอง (${totalSelected})`}
         </button>
       </div>
 
       {/* รายการสนาม */}
       {courts.length === 0 ? (
-        <p className="text-gray-500">⚠️ ไม่มีคอร์ทที่เปิดให้จอง</p>
+        <p className="text-gray-500">⚠️ ไม่มีคอร์ทที่เปิดให้จองสำหรับวันที่เลือก</p>
       ) : (
-        courts.map(court => {
+        courts.map((court) => {
           const key = `${court.stadiumId}-${court.courtId}`;
           const sel = selectedSlots[key] || [];
 
+          // ตรวจสอบว่า court มี timeSlots หรือไม่
+          if (!court.timeSlots || court.timeSlots.length === 0) {
+            return (
+              <div key={key} className="bg-white rounded-lg shadow p-4 mb-4">
+                <h2 className="text-lg font-semibold text-green-700 mb-2">
+                  สนามที่ {court.courtId}
+                </h2>
+                <p className="text-gray-500">ไม่มีช่วงเวลาที่สามารถจองได้</p>
+              </div>
+            );
+          }
+
           return (
-            <div
-              key={key}
-              className="bg-white rounded-lg shadow p-4 mb-4"
-            >
+            <div key={key} className="bg-white rounded-lg shadow p-4 mb-4">
               <h2 className="text-lg font-semibold text-green-700 mb-2">
                 สนามที่ {court.courtId}
               </h2>
               <div className="grid grid-cols-5 gap-2">
                 {court.slots.map((status, idx) => {
-                  const isSel    = sel.includes(idx);
+                  const isSel = sel.includes(idx);
                   const baseColor = getSlotColor(status);
-                  const bgColor   = isSel ? "bg-blue-500" : baseColor;
+                  const bgColor = isSel ? "bg-blue-500" : baseColor;
 
                   return (
                     <button
@@ -208,9 +249,7 @@ const CourtBooking = () => {
                       className={`
                         px-4 py-2 rounded-md text-white font-bold
                         ${bgColor}
-                        ${status !== 1
-                          ? "cursor-not-allowed opacity-60"
-                          : "hover:opacity-80"}
+                        ${status !== 1 ? "cursor-not-allowed opacity-60" : "hover:opacity-80"}
                       `}
                     >
                       {court.timeSlots[idx] ?? `ช่วงที่ ${idx + 1}`}

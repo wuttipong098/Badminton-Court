@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDbConnection } from "@/repository/db_connection";
 import { bookings as BookingEntity } from "@/repository/entity/bookings";
 import { Court } from "@/repository/entity/Court";
+import { SlotTime } from "@/repository/entity/slot_time";
 import { In } from "typeorm";
 
 type Selection = {
@@ -90,12 +91,29 @@ export async function POST(req: Request) {
             court_id: slot.id, // ใช้ court_id แท้ (primary key)
             start_time: slot.start_time,
             end_time: slot.end_time,
-            booking_date: bookingDate,
+            booking_date: bookingDate, // บันทึกวันที่ที่เลือก
             total_price: price,
             status_id: 2, // 2 = pending
           });
 
           await manager.save(booking);
+
+          // อัปเดต slot_time ด้วย booking_date ที่เลือก
+          const updateResult = await manager.update(
+            SlotTime,
+            {
+              court_id: slot.id,
+              start_time: slot.start_time,
+              booking_date: bookingDate,
+            },
+            {
+              status_id: 2, // อัปเดตสถานะเป็น 2 (pending)
+            }
+          );
+
+          if (updateResult.affected === 0) {
+            throw new Error(`ไม่สามารถอัปเดต slot_time สำหรับ court_id ${slot.id}, start_time ${slot.start_time}, booking_date ${bookingDate}`);
+          }
         }
       }
     });
