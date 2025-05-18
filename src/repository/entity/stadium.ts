@@ -28,8 +28,8 @@ export class stadium {
   // @Column({ name: 'price', type: 'text' })
   // price!: string;
 
-  // @Column({ name: 'paymenttime', type: 'text' })
-  // paymentTime!: string;
+  @Column({ name: 'paymenttime', type: 'time' })
+  paymentTime!: string;
 
   // @Column({ name: 'closedates', type: 'text' }) // เก็บ JSON string
   // closeDates!: string | null;

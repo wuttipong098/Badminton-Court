@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { CreateAccountParams } from '@/dto/request/bookings';
+import { CountdownCircleTimer } from 'react-countdown-circle-timer';
 
 interface BookingSlot {
   courtId: number;
@@ -30,10 +31,12 @@ const PaymentPage = () => {
   const [apiImageSlip, setApiImageSlip] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
   const [stadiumName, setStadiumName] = useState<string>("ไม่ระบุสนาม");
+  const [isTimerExpired, setIsTimerExpired] = useState(false);
+  const [timerDuration, setTimerDuration] = useState<number>(900); // ค่าเริ่มต้น 15 นาที (900 วินาที)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const MySwal = withReactContent(Swal);
 
-  // ฟังก์ชันแปลงวันที่จาก ISO (YYYY-MM-DD) เป็นรูปแบบไทย (วัน/เดือน/ปี)
+  // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
   const formatThaiDate = (isoDate: string) => {
     const [year, month, day] = isoDate.split("-");
     const thaiYear = parseInt(year) + 543;
@@ -45,16 +48,11 @@ const PaymentPage = () => {
     try {
       const response = await fetch('/api/stadium', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          StadiumID: parseInt(stadiumId),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ StadiumID: parseInt(stadiumId) }),
       });
-
       const result = await response.json();
-      if (result.status_code === 200 && result.data && result.data.length > 0) {
+      if (result.status_code === 200 && result.data?.length > 0) {
         setStadiumName(result.data[0].StadiumName || "ไม่ระบุสนาม");
       } else {
         setStadiumName("ไม่ระบุสนาม");
@@ -65,21 +63,16 @@ const PaymentPage = () => {
     }
   };
 
-  // ฟังก์ชันดึง ImageSlip จาก API
+  // ฟังก์ชันดึง ImageSlip
   const fetchImageSlip = async (stadiumId: string) => {
     try {
       const response = await fetch('/api/imageslip', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          StadiumID: parseInt(stadiumId),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ StadiumID: parseInt(stadiumId) }),
       });
-
       const result = await response.json();
-      if (result.status_code === 200 && result.data && result.data.length > 0 && result.data[0].ImageSlip) {
+      if (result.status_code === 200 && result.data?.length > 0 && result.data[0].ImageSlip) {
         setApiImageSlip(result.data[0].ImageSlip);
       } else {
         setApiImageSlip(null);
@@ -90,20 +83,47 @@ const PaymentPage = () => {
     }
   };
 
-  // ดึงข้อมูลจาก localStorage และชื่อสนามเมื่อ component โหลด
+  // ฟังก์ชันดึง paymentTime จาก API
+  const fetchPaymentTime = async (stadiumId: string) => {
+    try {
+      const response = await fetch('/api/timestop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ StadiumID: parseInt(stadiumId) }),
+      });
+      const result = await response.json();
+      if (result.status_code === 200 && result.data?.length > 0 && result.data[0].paymentTime) {
+        const paymentTimeInMinutes = parseInt(result.data[0].paymentTime); // เช่น "10"
+        if (!isNaN(paymentTimeInMinutes)) {
+          setTimerDuration(paymentTimeInMinutes * 60); // แปลงเป็นวินาที
+        } else {
+          console.warn('Invalid paymentTime, using default 15 minutes');
+          setTimerDuration(900); // ค่าเริ่มต้น 15 นาที
+        }
+      } else {
+        console.warn('No paymentTime found, using default 15 minutes');
+        setTimerDuration(900);
+      }
+    } catch (error) {
+      console.error('Error fetching paymentTime:', error);
+      setTimerDuration(900); // ค่าเริ่มต้น 15 นาที
+    }
+  };
+
+  // ดึงข้อมูลเมื่อ component โหลด
   useEffect(() => {
     const data = localStorage.getItem('bookingData');
     if (data) {
       const parsedData: BookingData = JSON.parse(data);
-      // ปรับปรุงข้อมูล slots ให้เหลือ HH:MM
       const adjustedSlots = parsedData.slots.map(slot => ({
         ...slot,
-        startTime: slot.startTime.slice(0, 5), // ตัดให้เหลือ HH:MM
-        endTime: slot.endTime.slice(0, 5),     // ตัดให้เหลือ HH:MM
+        startTime: slot.startTime.slice(0, 5),
+        endTime: slot.endTime.slice(0, 5),
       }));
       setBookingData({ ...parsedData, slots: adjustedSlots });
       fetchStadiumName(parsedData.stadiumId);
       fetchImageSlip(parsedData.stadiumId);
+      fetchPaymentTime(parsedData.stadiumId); // ดึง paymentTime
     } else {
       MySwal.fire("ข้อผิดพลาด", "ไม่พบข้อมูลการจอง", "error");
     }
@@ -127,6 +147,20 @@ const PaymentPage = () => {
   };
 
   const handleSubmit = async () => {
+    if (isTimerExpired) {
+      MySwal.fire({
+        title: 'หมดเวลา',
+        text: 'เวลาสำหรับการชำระเงินหมดลง กรุณาเริ่มการจองใหม่',
+        icon: 'error',
+        confirmButtonText: 'ตกลง',
+        confirmButtonColor: '#379DD6',
+      }).then(() => {
+        localStorage.removeItem('bookingData');
+        window.location.href = '/';
+      });
+      return;
+    }
+
     if (!imageFile) {
       MySwal.fire({
         title: 'ข้อผิดพลาด',
@@ -149,7 +183,6 @@ const PaymentPage = () => {
       return;
     }
 
-    // สร้าง request body สำหรับ API
     const requestBody: CreateAccountParams = {
       UserID: parseInt(bookingData.userId),
       BookingDate: bookingData.bookingDate,
@@ -158,18 +191,15 @@ const PaymentPage = () => {
         StartTime: slot.startTime,
         EndTime: slot.endTime,
       })),
-      MoneySlip: imageFile, // ส่ง base64 string จาก imageFile
+      MoneySlip: imageFile,
     };
 
     try {
       const response = await fetch('/api/booking', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
-
       const result = await response.json();
 
       if (result.status_code === 200) {
@@ -181,7 +211,7 @@ const PaymentPage = () => {
           confirmButtonColor: '#379DD6',
         }).then(() => {
           localStorage.removeItem('bookingData');
-          window.location.href = '/BadmintonCourt/historys'; // เปลี่ยนเส้นทางไป /BadmintonCourt/historys
+          window.location.href = '/BadmintonCourt/historys';
         });
       } else {
         MySwal.fire({
@@ -216,15 +246,22 @@ const PaymentPage = () => {
       cancelButtonText: 'ไม่'
     }).then((result) => {
       if (result.isConfirmed) {
-        MySwal.fire(
-          'ยกเลิกสำเร็จ!',
-          'การจองของคุณถูกยกเลิกแล้ว',
-          'success'
-        );
+        MySwal.fire('ยกเลิกสำเร็จ!', 'การจองของคุณถูกยกเลิกแล้ว', 'success');
         localStorage.removeItem('bookingData');
         window.location.href = '/';
       }
     });
+  };
+
+  const renderTime = ({ remainingTime }: { remainingTime: number }) => {
+    const minutes = Math.floor(remainingTime / 60);
+    const seconds = remainingTime % 60;
+    return (
+      <div className="text-center">
+        <div className="text-2xl font-bold">{`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`}</div>
+        <div className="text-sm">นาที:วินาที</div>
+      </div>
+    );
   };
 
   return (
@@ -264,9 +301,7 @@ const PaymentPage = () => {
           </div>
           <div className="mt-6 space-y-3 text-gray-800">
             <p className="text-lg font-semibold mt-4">ชื่อสนาม</p>
-            <p className="text-lg" style={{ color: '#1F9378' }}>
-              {stadiumName}
-            </p>
+            <p className="text-lg" style={{ color: '#1F9378' }}>{stadiumName}</p>
             <p className="text-lg font-semibold mt-4">วันที่จอง</p>
             <p className="text-lg" style={{ color: '#1F9378' }}>
               {bookingData ? formatThaiDate(bookingData.bookingDate) : "ไม่ระบุวันที่"}
@@ -319,6 +354,33 @@ const PaymentPage = () => {
               />
             </div>
           </div>
+          {/* ตัวจับเวลานับถอยหลัง */}
+          <div className="mt-4">
+            <CountdownCircleTimer
+              isPlaying
+              duration={timerDuration} // ใช้ timerDuration จาก state
+              colors={['#1F9378', '#F7B801', '#A30000']}
+              colorsTime={[timerDuration, timerDuration / 3, 0]} // ปรับ colorsTime ตาม timerDuration
+              size={120}
+              strokeWidth={10}
+              onComplete={() => {
+                setIsTimerExpired(true);
+                MySwal.fire({
+                  title: 'หมดเวลา',
+                  text: 'เวลาสำหรับการชำระเงินหมดลง กรุณาเริ่มการจองใหม่',
+                  icon: 'error',
+                  confirmButtonText: 'ตกลง',
+                  confirmButtonColor: '#379DD6',
+                }).then(() => {
+                  localStorage.removeItem('bookingData');
+                  window.location.href = '/';
+                });
+                return { shouldRepeat: false };
+              }}
+            >
+              {renderTime}
+            </CountdownCircleTimer>
+          </div>
           <div className="flex flex-col items-center space-y-4 mt-4">
             <button
               className="bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
@@ -330,6 +392,7 @@ const PaymentPage = () => {
               <button
                 className="bg-[#1F9378] text-white px-6 py-2 rounded-lg hover:bg-[#18755f] transition-colors"
                 onClick={handleSubmit}
+                disabled={isTimerExpired}
               >
                 ตกลง
               </button>
