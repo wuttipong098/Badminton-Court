@@ -310,8 +310,9 @@ const PaymentPage = () => {
             <div className="flex flex-wrap gap-4 text-lg">
               {bookingData && bookingData.slots.length > 0 ? (
                 bookingData.slots.map((slot, index) => (
-                  <p key={index} style={{ color: '#1F9378' }}>
-                    สนามที่ {slot.courtId}: {slot.startTime} - {slot.endTime}
+                  <p key={index}>
+                    <span style={{ color: '#1F9378' }}>สนามที่ {slot.courtId}</span>
+                    <span style={{ color: '#379DD6' }}>: {slot.startTime} - {slot.endTime}</span>
                   </p>
                 ))
               ) : (
