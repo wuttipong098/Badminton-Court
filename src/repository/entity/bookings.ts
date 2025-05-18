@@ -1,5 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { CourtNumber } from "./court_number"
+import { Court } from './Court';
+import { user } from './login';
 
 @Entity({ name: 'bookings' })
 export class bookings {
@@ -36,7 +38,14 @@ export class bookings {
     @Column({ name: 'update_date', type: 'date', nullable: true })
     update_date!: Date | null;
 
-    // @Column({ name: 'time', type: 'date' })
-    // time!: string;
+    // ความสัมพันธ์กับ Court
+    @ManyToOne(() => Court, (court) => court.id, { onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'court_id', referencedColumnName: 'id' })
+    court!: Court;
+
+    // ความสัมพันธ์กับ User
+    @ManyToOne(() => user, (user) => user.user_id, { onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'user_id', referencedColumnName: 'user_id' })
+    user!: user;
 
 }
