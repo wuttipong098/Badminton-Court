@@ -89,7 +89,7 @@ const CourtBooking = () => {
           className="px-4 py-2 bg-blue-500 text-white rounded-md font-bold hover:bg-blue-600"
           onClick={handleAddCourt}
         >
-          ➕ เพิ่มสนาม
+          ➕ เพิ่มคอร์ท
         </button>
       </div>
 
@@ -103,7 +103,7 @@ const CourtBooking = () => {
                 className="text-lg font-semibold text-green-700 cursor-pointer hover:underline"
                 onClick={() => router.push(`/BadmintonShop/bookingSetting?courtId=${court.courtId}&stadiumId=${court.stadiumId}`)}
               >
-                สนามที่ {court.courtId}
+                คอร์ทที่ {court.courtId}
               </h2>
               <button
                 className="px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600"

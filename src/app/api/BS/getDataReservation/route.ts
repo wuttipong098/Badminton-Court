@@ -3,9 +3,8 @@ import { getDbConnection } from '@/repository/db_connection';
 import { Court } from '@/repository/entity/Court';
 import { SlotTime } from '@/repository/entity/slot_time';
 import { stadium } from '@/repository/entity/stadium';
-import { In } from 'typeorm';
+import { In, Between } from 'typeorm';
 
-// ฟังก์ชันสร้าง timeSlots จาก start_time ถึง end_time (สล็อตละ 1 ชั่วโมง)
 function generateTimeSlots(startTime: string, endTime: string): string[] {
   const slots: string[] = [];
   const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -29,7 +28,7 @@ export async function GET(request: Request) {
     const userId = Number(searchParams.get('userId'));
     const bookingDate = searchParams.get('bookingDate');
 
-    console.log("Received: userId =", userId, "bookingDate =", bookingDate); // Debug log
+    console.log("Received: userId =", userId, "bookingDate =", bookingDate);
 
     if (isNaN(userId) || !bookingDate) {
       return NextResponse.json(
@@ -38,7 +37,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // ตรวจสอบว่า bookingDate ถูกต้อง
     const date = new Date(bookingDate);
     if (isNaN(date.getTime())) {
       return NextResponse.json(
@@ -48,8 +46,6 @@ export async function GET(request: Request) {
     }
 
     const dateString = date.toISOString().split('T')[0];
-
-    // ตรวจสอบวันที่ในอดีต
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date < today) {
@@ -60,7 +56,6 @@ export async function GET(request: Request) {
     }
 
     return await getDbConnection(async (manager) => {
-      // 1) หา stadiumId จาก userId
       const stadRepo = manager.getRepository(stadium);
       const stad = await stadRepo.findOne({ where: { user_id: userId } });
       if (!stad) {
@@ -72,7 +67,6 @@ export async function GET(request: Request) {
 
       const stadiumId = stad.stadium_id;
 
-      // 2) ตรวจสอบ closeDates
       if (stad.closeDates) {
         try {
           const closeDates = JSON.parse(stad.closeDates);
@@ -87,11 +81,10 @@ export async function GET(request: Request) {
         }
       }
 
-      // 3) ดึงสนามทั้งหมด
       const courtRepo = manager.getRepository(Court);
       const courts = await courtRepo.find({
         where: { stadiumId },
-        select: ['courtId', 'stadiumId', 'start_time', 'end_time'],
+        select: ['id', 'courtId', 'stadiumId', 'start_time', 'end_time'],
       });
 
       if (courts.length === 0) {
@@ -101,68 +94,75 @@ export async function GET(request: Request) {
         );
       }
 
-      // 4) ดึงสล็อตสำหรับวันที่เลือก
+      console.log("Court IDs (court_id):", courts.map(c => c.id));
+      console.log("Court Numbers (court_number):", courts.map(c => c.courtId));
+
       const slotTimeRepo = manager.getRepository(SlotTime);
       const slots = await slotTimeRepo.find({
         where: {
-          court_id: In(courts.map((c) => c.courtId)),
-          booking_date: new Date(dateString),
+          court_id: In(courts.map((c) => c.id)),
+          booking_date: Between(new Date(`${dateString}T00:00:00Z`), new Date(`${dateString}T23:59:59Z`)),
         },
         select: ['court_id', 'start_time', 'status_id'],
       });
 
-      // 5) จัดกลุ่ม Courts ตาม courtId และรวม timeSlots
-      const groupedCourts = courts.reduce((acc, court) => {
-        const key = court.courtId;
-        if (!court.start_time || !court.end_time) {
-          if (!acc[key]) {
-            acc[key] = {
-              stadiumId: court.stadiumId,
-              courtId: court.courtId,
-              timeSlots: [],
-              slots: [],
-            };
-          }
-          return acc;
-        }
+      console.log("SlotTime data raw:", slots);
 
-        const timeSlots = generateTimeSlots(court.start_time, court.end_time);
+      // กลุ่มตาม court_number และรวม schedule จาก court_id
+      const groupedCourts = courts.reduce((acc, court) => {
+        const key = court.courtId; // ใช้ court_number เป็น key
         if (!acc[key]) {
           acc[key] = {
-            stadiumId: court.stadiumId,
-            courtId: court.courtId,
-            timeSlots: timeSlots,
-            slots: timeSlots.map(() => 1), // Default: ว่าง
+            courtNumber: court.courtId,
+            courtIds: [court.id], // เก็บ court_id ที่เกี่ยวข้อง
+            schedule: [],
           };
         } else {
-          // รวม timeSlots (หลีกเลี่ยงการซ้ำ)
-          const existingTimeSlots = acc[key].timeSlots;
-          timeSlots.forEach((slot) => {
-            if (!existingTimeSlots.includes(slot)) {
-              acc[key].timeSlots.push(slot);
-              acc[key].slots.push(1); // Default: ว่าง
-            }
-          });
+          acc[key].courtIds.push(court.id);
         }
         return acc;
-      }, {} as Record<number, { stadiumId: number; courtId: number; timeSlots: string[]; slots: number[] }>);
+      }, {} as Record<number, { courtNumber: number; courtIds: number[]; schedule: { time: string; status: number | null }[] }>);
 
-      // 6) อัปเดตสถานะสล็อตจาก SlotTime
+      // เพิ่ม schedule จาก timeSlots ของแต่ละ court_id
       Object.values(groupedCourts).forEach((court) => {
-        const courtSlots = slots.filter((s) => s.court_id === court.courtId);
-        court.timeSlots.forEach((timeSlot, idx) => {
-          const slotStart = `${timeSlot.split('-')[0]}:00`;
-          const slot = courtSlots.find((s) => s.start_time === slotStart);
-          if (slot) {
-            court.slots[idx] = slot.status_id;
+        court.courtIds.forEach((courtId) => {
+          const courtData = courts.find(c => c.id === courtId);
+          if (courtData && courtData.start_time && courtData.end_time) {
+            const timeSlots = generateTimeSlots(courtData.start_time, courtData.end_time);
+            const existingTimes = new Set(court.schedule.map(s => s.time));
+            timeSlots.forEach(timeSlot => {
+              if (!existingTimes.has(timeSlot)) {
+                court.schedule.push({ time: timeSlot, status: null });
+              }
+            });
+          }
+        });
+        court.schedule.sort((a, b) => a.time.localeCompare(b.time)); // เรียงเวลา
+      });
+
+      // อัปเดตสถานะจาก SlotTime
+      Object.values(groupedCourts).forEach((court) => {
+        const courtSlots = slots.filter((s) => court.courtIds.includes(s.court_id));
+        court.schedule.forEach((slot, idx) => {
+          const [startStr] = slot.time.split('-');
+          const matchedSlot = courtSlots.find((s) => {
+            const slotStartTime = s.start_time.split(':').slice(0, 2).join(':');
+            return slotStartTime === startStr;
+          });
+          if (matchedSlot) {
+            court.schedule[idx].status = matchedSlot.status_id;
+            console.log(`Matched slot for court ${court.courtNumber} at ${startStr}: status_id = ${matchedSlot.status_id}`);
+          } else {
+            console.log(`No slot found for court ${court.courtNumber} at ${startStr} on ${dateString}`);
           }
         });
       });
 
-      // 7) สร้าง response
-      const courtData = Object.values(groupedCourts).sort(
-        (a, b) => a.courtId - b.courtId
-      );
+      const courtData = Object.values(groupedCourts)
+        .filter((court) => court.schedule.length > 0)
+        .sort((a, b) => a.courtNumber - b.courtNumber);
+
+      console.log("CourtData:", courtData);
 
       return NextResponse.json(
         { success: true, data: { courts: courtData } },

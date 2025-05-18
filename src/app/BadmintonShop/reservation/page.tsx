@@ -6,9 +6,11 @@ import { Calendar as CalendarIcon } from "lucide-react";
 
 interface CourtItem {
   stadiumId: number;
-  courtId: number;
-  slots: number[]; // 1=available, 2=booked, 3=pending
-  timeSlots: string[]; // label per slot
+  courtNumber: number;
+  courtIds: number[];
+  schedule: { time: string; status: number | null }[];
+  timeSlots?: string[]; // เพิ่มเพื่อใช้ใน UI
+  slots?: number[]; // เพิ่มเพื่อใช้ใน UI
 }
 
 const CourtBooking = () => {
@@ -59,10 +61,21 @@ const CourtBooking = () => {
           setCourts([]);
           return;
         }
-        const sorted = json.data.courts.sort(
-          (a: CourtItem, b: CourtItem) => a.courtId - b.courtId
+
+        // แปลง schedule เป็น timeSlots และ slots
+        const transformedCourts = json.data.courts.map((court: CourtItem) => ({
+          ...court,
+          timeSlots: court.schedule.map((s: { time: string }) => s.time),
+          slots: court.schedule.map((s: { status: number | null }) => {
+            if (s.status === null) return 0; // ถ้าไม่มีข้อมูล ให้เป็น 0 (default)
+            return s.status;
+          }),
+        }));
+
+        const sorted = transformedCourts.sort(
+          (a: CourtItem, b: CourtItem) => a.courtNumber - b.courtNumber
         );
-        console.log("Sorted Courts:", sorted); // Debug log
+        console.log("Sorted Courts:", sorted);
         setCourts(sorted);
       } catch (err) {
         console.error("Fetch error:", err);
@@ -88,8 +101,8 @@ const CourtBooking = () => {
 
   // toggle เลือก slot
   const toggleSlot = (court: CourtItem, idx: number) => {
-    if (court.slots[idx] !== 1) return; // เฉพาะ available
-    const key = `${court.stadiumId}-${court.courtId}`;
+    if (court.slots && court.slots[idx] !== 1) return; // เฉพาะ available
+    const key = `${court.stadiumId}-${court.courtNumber}`; // ใช้ courtNumber
     const prev = selectedSlots[key] || [];
     const next = prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx];
 
@@ -133,8 +146,14 @@ const CourtBooking = () => {
           userId: Number(userId),
           bookingDate,
           selections: Object.entries(selectedSlots).map(([key, slots]) => {
-            const [stadiumId, courtId] = key.split("-").map(Number);
-            return { stadiumId, courtId, slots };
+            const [stadiumId, courtNumber] = key.split("-").map(Number);
+            // หา courtIds จาก courtNumber
+            const court = courts.find(c => c.courtNumber === courtNumber);
+            return {
+              stadiumId,
+              courtId: court?.courtIds[0], // ใช้ court_id ตัวแรก (อาจต้องปรับตาม logic)
+              slots,
+            };
           }),
         }),
       });
@@ -144,10 +163,10 @@ const CourtBooking = () => {
         showMessage("✅ จองสำเร็จทั้งหมด");
         setCourts((cs) =>
           cs.map((c) => {
-            const key = `${c.stadiumId}-${c.courtId}`;
+            const key = `${c.stadiumId}-${c.courtNumber}`;
             const slotsToBook = selectedSlots[key] || [];
             if (slotsToBook.length > 0) {
-              const newSlots = [...c.slots];
+              const newSlots = [...(c.slots || [])];
               slotsToBook.forEach((i) => (newSlots[i] = 2));
               return { ...c, slots: newSlots };
             }
@@ -215,7 +234,7 @@ const CourtBooking = () => {
         <p className="text-gray-500">⚠️ ไม่มีคอร์ทที่เปิดให้จองสำหรับวันที่เลือก</p>
       ) : (
         courts.map((court) => {
-          const key = `${court.stadiumId}-${court.courtId}`;
+          const key = `${court.stadiumId}-${court.courtNumber}`;
           const sel = selectedSlots[key] || [];
 
           // ตรวจสอบว่า court มี timeSlots หรือไม่
@@ -223,7 +242,7 @@ const CourtBooking = () => {
             return (
               <div key={key} className="bg-white rounded-lg shadow p-4 mb-4">
                 <h2 className="text-lg font-semibold text-green-700 mb-2">
-                  คอร์ทที่ {court.courtId}
+                  คอร์ทที่ {court.courtNumber}
                 </h2>
                 <p className="text-gray-500">ไม่มีช่วงเวลาที่สามารถจองได้</p>
               </div>
@@ -233,10 +252,10 @@ const CourtBooking = () => {
           return (
             <div key={key} className="bg-white rounded-lg shadow p-4 mb-4">
               <h2 className="text-lg font-semibold text-green-700 mb-2">
-                คอร์ทที่ {court.courtId}
+                คอร์ทที่ {court.courtNumber}
               </h2>
               <div className="grid grid-cols-5 gap-2">
-                {court.slots.map((status, idx) => {
+                {court.slots && court.slots.map((status, idx) => {
                   const isSel = sel.includes(idx);
                   const baseColor = getSlotColor(status);
                   const bgColor = isSel ? "bg-blue-500" : baseColor;
