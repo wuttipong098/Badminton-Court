@@ -185,6 +185,37 @@ const StadiumPage = () => {
     }
   };
 
+  // ฟังก์ชันลบการจองทั้งหมดใน addmenu สำหรับ UserID
+  const handleDeleteAllBookings = async () => {
+    try {
+      const bookings = await fetchBookings();
+      if (bookings.length === 0) {
+        return true;
+      }
+
+      for (const booking of bookings) {
+        const response = await fetch("/api/addmenu", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ addmenuID: booking.addmenuID }),
+        });
+
+        const result = await response.json();
+        if (result.status_code !== 200) {
+          MySwal.fire("ข้อผิดพลาด", `ไม่สามารถลบการจอง ID ${booking.addmenuID} ได้`, "error");
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error("Error deleting all bookings:", error);
+      MySwal.fire("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการลบการจองทั้งหมด", "error");
+      return false;
+    }
+  };
+
   // ฟังก์ชันลบการจองจาก API
   const handleDeleteBooking = async (addmenuID: number) => {
     try {
@@ -199,7 +230,6 @@ const StadiumPage = () => {
       const result = await response.json();
       if (result.status_code === 200) {
         MySwal.fire("สำเร็จ", "ลบการจองเรียบร้อยแล้ว", "success");
-        // อัปเดตข้อมูลใน Swal
         handleClick();
       } else {
         MySwal.fire("ข้อผิดพลาด", result.status_message, "error");
@@ -210,6 +240,13 @@ const StadiumPage = () => {
     }
   };
 
+  // ฟังก์ชันลบการจองปัจจุบัน (ยังไม่ได้บันทึก)
+  const handleDeleteCurrentBooking = (index: number) => {
+    setSelectedTimeSlots((prev) => prev.filter((_, i) => i !== index));
+    MySwal.fire("สำเร็จ", "ลบการจองปัจจุบันเรียบร้อยแล้ว", "success");
+    handleClick();
+  };
+
   // ฟังก์ชันจัดการปุ่มจอง
   const handleClick = async () => {
     if (selectedTimeSlots.length === 0) {
@@ -218,48 +255,34 @@ const StadiumPage = () => {
     }
 
     try {
-      // บันทึกการจองทันทีด้วย API PUT
-      for (const slot of selectedTimeSlots) {
+      // ดึงข้อมูลการจองจาก API
+      const bookings = await fetchBookings();
+
+      // สร้างรายการการจองปัจจุบัน
+      const currentBookings = selectedTimeSlots.map((slot, index) => {
         const court = courts.find((c) => c.CourtNumber === slot.court);
         const pricePerSlot = court ? court.PriceHour : 0;
-
-        const bookingParams: CreateAccountParams = {
-          UserID: parseInt(userId!),
+        return {
           CourtId: slot.court,
+          BookingDate: bookingDate,
           StartTime: slot.StartTime,
           EndTime: slot.EndTime,
           TotalPrice: pricePerSlot,
-          BookingDate: bookingDate!,
+          addmenuID: null,
+          currentIndex: index,
         };
+      });
 
-        const response = await fetch("/api/addmenu", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(bookingParams),
-        });
-
-        const result = await response.json();
-        if (result.status_code !== 201) {
-          MySwal.fire("ข้อผิดพลาด", "ไม่สามารถบันทึกการจองได้", "error");
-          return;
-        }
-      }
-
-      // รีเซ็ตสล็อตที่เลือก
-      setSelectedTimeSlots([]);
-
-      // ดึงข้อมูลการจองล่าสุดจาก API
-      const bookings = await fetchBookings();
+      // รวมการจองปัจจุบันกับการจองจาก API
+      const allBookings = [...bookings, ...currentBookings];
 
       // คำนวณราคารวมทั้งหมด
-      const grandTotalPrice = bookings.reduce((total: number, booking: any) => {
+      const grandTotalPrice = allBookings.reduce((total: number, booking: any) => {
         return total + booking.TotalPrice;
       }, 0);
 
-      // สร้างรายการการจองสำหรับแสดงใน Swal
-      const bookingDetails = bookings
+      // สร้างรายการการจองทั้งหมดสำหรับแสดงใน Swal
+      const bookingDetails = allBookings
         .map((booking: any, index: number) => `
           <div style="margin-bottom: 10px;">
             <p>รายการที่ ${index + 1}</p>
@@ -267,10 +290,15 @@ const StadiumPage = () => {
             <p>วันที่: ${formatThaiDate(booking.BookingDate)}</p>
             <p>เวลา: ${booking.StartTime.slice(0, 5)} - ${booking.EndTime.slice(0, 5)}</p>
             <p>ราคา: ฿${booking.TotalPrice}</p>
-            <button onclick="window.deleteBooking(${booking.addmenuID})" class="bg-red-500 text-white px-4 py-1 rounded">ลบ</button>
+            ${
+              booking.addmenuID
+                ? `<button onclick="window.deleteBooking(${booking.addmenuID})" class="bg-red-500 text-white px-4 py-1 rounded">ลบ</button>`
+                : `<button onclick="window.deleteCurrentBooking(${booking.currentIndex})" class="bg-red-500 text-white px-4 py-1 rounded">ลบ</button>`
+            }
           </div>
+          ${index < allBookings.length - 1 ? "<hr>" : ""}
         `)
-        .join("<br>");
+        .join("");
 
       MySwal.fire({
         title: "ตะกร้าการจอง",
@@ -298,15 +326,24 @@ const StadiumPage = () => {
           (window as any).deleteBooking = (addmenuID: number) => {
             handleDeleteBooking(addmenuID);
           };
+          (window as any).deleteCurrentBooking = (index: number) => {
+            handleDeleteCurrentBooking(index);
+          };
         },
-      }).then((result) => {
+      }).then(async (result) => {
         if (result.isConfirmed) {
+          // ลบข้อมูลทั้งหมดใน addmenu
+          const deleteSuccess = await handleDeleteAllBookings();
+          if (!deleteSuccess) {
+            return;
+          }
+
           // สร้างข้อมูลการจองสำหรับเก็บใน localStorage
           const bookingData = {
             userId,
             stadiumId,
             bookingDate,
-            slots: bookings.map((booking: any) => ({
+            slots: allBookings.map((booking: any) => ({
               courtId: booking.CourtId,
               slotTime: `${booking.StartTime.slice(0, 5)} - ${booking.EndTime.slice(0, 5)}`,
               startTime: booking.StartTime,
@@ -319,13 +356,16 @@ const StadiumPage = () => {
           // เก็บข้อมูลใน localStorage
           localStorage.setItem("bookingData", JSON.stringify(bookingData));
 
+          // รีเซ็ต selectedTimeSlots
+          setSelectedTimeSlots([]);
+
           // Redirect ไปหน้า payment
           router.push("/BadmintonCourt/reservation/payment");
         }
       });
     } catch (error) {
-      console.error("Error saving booking:", error);
-      MySwal.fire("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการบันทึกการจอง", "error");
+      console.error("Error displaying booking cart:", error);
+      MySwal.fire("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการแสดงตะกร้าการจอง", "error");
     }
   };
 
@@ -342,7 +382,7 @@ const StadiumPage = () => {
         (selected) =>
           selected.StartTime === slot.StartTime &&
           selected.EndTime === slot.EndTime &&
-          selected.court === courtIndex
+          selected.court === courtIndex,
       );
       if (exists) {
         return prev.filter(
@@ -351,7 +391,7 @@ const StadiumPage = () => {
               selected.StartTime === slot.StartTime &&
               selected.EndTime === slot.EndTime &&
               selected.court === courtIndex
-            )
+            ),
         );
       } else {
         return [...prev, newSlot];
@@ -366,7 +406,7 @@ const StadiumPage = () => {
         (selected) =>
           selected.StartTime === slot.StartTime &&
           selected.EndTime === slot.EndTime &&
-          selected.court === courtIndex
+          selected.court === courtIndex,
       );
       let statusClass = "";
 
