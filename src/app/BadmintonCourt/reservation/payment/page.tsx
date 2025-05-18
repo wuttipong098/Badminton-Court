@@ -5,8 +5,8 @@ import Image from "next/image";
 import ball from "@/public/ball.png";
 import { FaCamera } from 'react-icons/fa';
 import { useState, useEffect, useRef } from "react";
-import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import Swal from 'sweetalert2';
 import { CreateAccountParams } from '@/dto/request/bookings';
 import { CountdownCircleTimer } from 'react-countdown-circle-timer';
 
@@ -93,12 +93,12 @@ const PaymentPage = () => {
       });
       const result = await response.json();
       if (result.status_code === 200 && result.data?.length > 0 && result.data[0].paymentTime) {
-        const paymentTimeInMinutes = parseInt(result.data[0].paymentTime); // เช่น "10"
+        const paymentTimeInMinutes = parseInt(result.data[0].paymentTime);
         if (!isNaN(paymentTimeInMinutes)) {
-          setTimerDuration(paymentTimeInMinutes * 60); // แปลงเป็นวินาที
+          setTimerDuration(paymentTimeInMinutes * 60);
         } else {
           console.warn('Invalid paymentTime, using default 15 minutes');
-          setTimerDuration(900); // ค่าเริ่มต้น 15 นาที
+          setTimerDuration(900);
         }
       } else {
         console.warn('No paymentTime found, using default 15 minutes');
@@ -106,7 +106,7 @@ const PaymentPage = () => {
       }
     } catch (error) {
       console.error('Error fetching paymentTime:', error);
-      setTimerDuration(900); // ค่าเริ่มต้น 15 นาที
+      setTimerDuration(900);
     }
   };
 
@@ -123,7 +123,7 @@ const PaymentPage = () => {
       setBookingData({ ...parsedData, slots: adjustedSlots });
       fetchStadiumName(parsedData.stadiumId);
       fetchImageSlip(parsedData.stadiumId);
-      fetchPaymentTime(parsedData.stadiumId); // ดึง paymentTime
+      fetchPaymentTime(parsedData.stadiumId);
     } else {
       MySwal.fire("ข้อผิดพลาด", "ไม่พบข้อมูลการจอง", "error");
     }
@@ -358,23 +358,17 @@ const PaymentPage = () => {
           <div className="mt-4">
             <CountdownCircleTimer
               isPlaying
-              duration={timerDuration} // ใช้ timerDuration จาก state
+              duration={timerDuration}
               colors={['#1F9378', '#F7B801', '#A30000']}
-              colorsTime={[timerDuration, timerDuration / 3, 0]} // ปรับ colorsTime ตาม timerDuration
+              colorsTime={[timerDuration, timerDuration / 3, 0]}
               size={120}
               strokeWidth={10}
               onComplete={() => {
                 setIsTimerExpired(true);
-                MySwal.fire({
-                  title: 'หมดเวลา',
-                  text: 'เวลาสำหรับการชำระเงินหมดลง กรุณาเริ่มการจองใหม่',
-                  icon: 'error',
-                  confirmButtonText: 'ตกลง',
-                  confirmButtonColor: '#379DD6',
-                }).then(() => {
-                  localStorage.removeItem('bookingData');
-                  window.location.href = '/';
-                });
+                if (bookingData?.userId) {
+                  localStorage.setItem('userId', bookingData.userId);
+                }
+                window.location.href = '/BadmintonCourt/reservation';
                 return { shouldRepeat: false };
               }}
             >
