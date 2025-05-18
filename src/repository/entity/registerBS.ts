@@ -29,9 +29,6 @@ export class registerB {
   @Column({ name: 'password', type: 'varchar', length: 100 })
   password!: string;
 
-  @Column({ name: 'courtlocation', type: 'varchar', length: 100 })
-  court_location!: string;
-
   @Column({ name: 'stadium_name', type: 'varchar', length: 100 })
   stadium_name!: string;
 }

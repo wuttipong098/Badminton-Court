@@ -1,64 +1,150 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../components/button';
 import { Card, CardContent } from '../components/card';
-import { Input } from '../components/input';
 
-const initialBookings = [
-  { id: 1, court: '1', name: 'นาย Test Test', times: ['08:00 - 09:00', '09:00 - 10:00'], status: '', paymentStatus: 'paid', slipUrl: '/public/moneyslip.jpg' },
-  { id: 2, court: '3', name: 'นาย C', times: [], status: '', paymentStatus: 'unpaid', slipUrl: '' },
-  { id: 3, court: '3', name: 'นาย D', times: [], status: '', paymentStatus: 'paid', slipUrl: '/slips/slip3.jpg' },
-  { id: 4, court: '4', name: 'นาย E', times: [], status: '', paymentStatus: 'unpaid', slipUrl: '' },
-  { id: 5, court: '4', name: 'นาย F', times: [], status: '', paymentStatus: 'paid', slipUrl: '/slips/slip5.jpg' },
-];
+interface Booking {
+  id: number;
+  court: string;
+  name: string;
+  phone: string;
+  times: string[];
+  status: string;
+  statusId: number;
+  bookingDate: string;
+  createdDate: string;
+  paymentStatus: string;
+  slipUrl: string;
+}
 
 export default function ApproveBookings() {
-  const [bookings, setBookings] = useState(initialBookings);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredBookings, setFilteredBookings] = useState(initialBookings);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false); // State สำหรับ popup
+  const [selectedSlip, setSelectedSlip] = useState<string | null>(null); // State สำหรับเก็บ Base64 ของรูป
 
-  const handleApprove = (id: number) => {
-    setBookings(bookings.map(b => b.id === id ? { ...b, status: 'approved' } : b));
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        console.log('Fetching from /api/BS/getBookingApprovals...');
+        const res = await fetch('/api/BS/getBookingApprovals', {
+          headers: {
+            'Accept': 'application/json',
+          },
+        });
+
+        console.log('Response status:', res.status);
+        console.log('Content-Type:', res.headers.get('content-type'));
+
+        if (res.status === 404) {
+          setError('API endpoint not found. Please check if /api/BS/getBookingApprovals exists.');
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await res.text();
+          console.error('Unexpected response:', text);
+          setDebugInfo(`Received non-JSON response: ${text.substring(0, 200)}...`);
+          throw new Error('Server did not return JSON');
+        }
+
+        const json = await res.json();
+        console.log('API response:', json);
+
+        if (json.success) {
+          setBookings(json.data.bookings);
+          setFilteredBookings(json.data.bookings);
+          setError(null);
+        } else {
+          setError(json.message || 'Failed to fetch bookings');
+          console.error('Failed to fetch bookings:', json.message);
+        }
+      } catch (err: any) {
+        setError(err.message || 'An error occurred while fetching bookings');
+        console.error('Fetch error:', err);
+      }
+    };
+    fetchBookings();
+  }, []);
+
+  const handleApprove = async (id: number) => {
+    try {
+      const res = await fetch('/api/BS/updateBookingStatus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'approved' }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setBookings(bookings.map(b => b.id === id ? { ...b, status: 'approved' } : b));
+        setFilteredBookings(filteredBookings.map(b => b.id === id ? { ...b, status: 'approved' } : b));
+      } else {
+        setError(json.message || 'Failed to approve booking');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while approving');
+      console.error('Approve error:', err);
+    }
   };
 
-  const handleReject = (id: number) => {
-    setBookings(bookings.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
+  const handleReject = async (id: number) => {
+    try {
+      const res = await fetch('/api/BS/updateBookingStatus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'rejected' }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setBookings(bookings.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
+        setFilteredBookings(filteredBookings.map(b => b.id === id ? { ...b, status: 'rejected' } : b));
+      } else {
+        setError(json.message || 'Failed to reject booking');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while rejecting');
+      console.error('Reject error:', err);
+    }
   };
 
-  const handleSearch = () => {
-    setFilteredBookings(
-      bookings.filter(b =>
-        b.court.includes(searchTerm) || b.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  };
-
-  const handleViewSlip = (url: string) => {
-    if (url) {
-      window.open(url, '_blank');
+  const handleViewSlip = (slipBase64: string) => {
+    if (slipBase64) {
+      setSelectedSlip(slipBase64); // เก็บ Base64 ของรูป
+      setIsPopupOpen(true); // เปิด popup
     } else {
       alert('ไม่มีสลิปการโอนเงิน');
     }
+  };
+
+  const closePopup = () => {
+    setIsPopupOpen(false);
+    setSelectedSlip(null); // แก้ไขให้ถูกต้อง
   };
 
   return (
     <div className="min-h-screen bg-white p-6 rounded-lg shadow-md mx-auto">
       <h1 className="text-2xl font-bold mb-4 text-black">Approve</h1>
 
-      {/* Search Bar */}
-      <div className="mb-4 flex gap-2">
-        <Input
-          type="text"
-          placeholder="สนามที่, ชื่อคนจอง"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border p-2 rounded flex-1 text-black"
-        />
-        <Button onClick={handleSearch} className="bg-green-500">ค้นหา</Button>
-      </div>
+      {error && (
+        <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+          {error}
+        </div>
+      )}
 
-      {/* Booking List */}
+      {debugInfo && (
+        <div className="mb-4 p-2 bg-yellow-100 text-yellow-700 rounded">
+          <strong>Debug Info:</strong> {debugInfo}
+        </div>
+      )}
+
       <Card>
         <CardContent>
           <table className="w-full border-collapse text-black">
@@ -66,7 +152,9 @@ export default function ApproveBookings() {
               <tr className="bg-gray-200">
                 <th className="p-2 border">สนามที่</th>
                 <th className="p-2 border">ชื่อคนจอง</th>
+                <th className="p-2 border">เบอร์โทร</th>
                 <th className="p-2 border">เวลาจอง</th>
+                <th className="p-2 border">วันที่ที่ทำการจอง</th>
                 <th className="p-2 border">สถานะจ่ายเงิน</th>
                 <th className="p-2 border">ดูสลิป</th>
                 <th className="p-2 border">จัดการ</th>
@@ -77,6 +165,7 @@ export default function ApproveBookings() {
                 <tr key={booking.id} className="border">
                   <td className="p-2 border text-center">{booking.court}</td>
                   <td className="p-2 border">{booking.name}</td>
+                  <td className="p-2 border text-center">{booking.phone}</td>
                   <td className="p-2 border">
                     {booking.times.length > 0 ? (
                       booking.times.map((time, i) => (
@@ -86,6 +175,7 @@ export default function ApproveBookings() {
                       <span>-</span>
                     )}
                   </td>
+                  <td className="p-2 border text-center">{booking.createdDate}</td>
                   <td className="p-2 border text-center">
                     {booking.paymentStatus === 'paid' ? (
                       <span className="text-green-600 font-semibold">จ่ายแล้ว</span>
@@ -103,8 +193,8 @@ export default function ApproveBookings() {
                     )}
                   </td>
                   <td className="p-2 border flex gap-2 justify-center">
-                    <Button onClick={() => handleReject(booking.id)} className="bg-red-500">ปฏิเสธ</Button>
                     <Button onClick={() => handleApprove(booking.id)} className="bg-blue-500">อนุมัติ</Button>
+                    <Button onClick={() => handleReject(booking.id)} className="bg-red-500">ปฏิเสธ</Button>
                   </td>
                 </tr>
               ))}
@@ -112,6 +202,21 @@ export default function ApproveBookings() {
           </table>
         </CardContent>
       </Card>
+
+      {/* Popup สำหรับแสดงรูป */}
+      {isPopupOpen && selectedSlip && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg max-w-lg w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold text-black">สลิปการโอนเงิน</h2>
+              <button onClick={closePopup} className="text-red-500 font-bold">
+                X
+              </button>
+            </div>
+            <img src={selectedSlip} alt="สลิปการโอนเงิน" className="w-full h-auto" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
