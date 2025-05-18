@@ -223,7 +223,7 @@ const CourtBooking = () => {
             return (
               <div key={key} className="bg-white rounded-lg shadow p-4 mb-4">
                 <h2 className="text-lg font-semibold text-green-700 mb-2">
-                  สนามที่ {court.courtId}
+                  คอร์ทที่ {court.courtId}
                 </h2>
                 <p className="text-gray-500">ไม่มีช่วงเวลาที่สามารถจองได้</p>
               </div>
@@ -233,7 +233,7 @@ const CourtBooking = () => {
           return (
             <div key={key} className="bg-white rounded-lg shadow p-4 mb-4">
               <h2 className="text-lg font-semibold text-green-700 mb-2">
-                สนามที่ {court.courtId}
+                คอร์ทที่ {court.courtId}
               </h2>
               <div className="grid grid-cols-5 gap-2">
                 {court.slots.map((status, idx) => {

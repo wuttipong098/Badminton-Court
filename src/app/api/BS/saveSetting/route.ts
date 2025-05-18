@@ -70,7 +70,6 @@ export async function POST(request: Request) {
       }
 
       stad.location = location;
-      stad.price = price;
       stad.paymentTime = payment_time;
       stad.closeDates = closeDates && closeDates.length > 0 ? JSON.stringify(closeDates) : null;
 
@@ -104,8 +103,14 @@ export async function POST(request: Request) {
         }
       }
 
-      // 4) สร้างสล็อตใน slot_time
+      // 4) อัปเดต price ในตาราง court
       const courtRepo = manager.getRepository(Court);
+      await courtRepo.update(
+        { stadiumId },
+        { price: price } // อัปเดต price ให้ทุก court ที่มี stadiumId นี้
+      );
+
+      // 5) สร้างสล็อตใน slot_time
       const slotTimeRepo = manager.getRepository(SlotTime);
 
       // ดึง courtId, start_time, end_time
@@ -181,8 +186,8 @@ export async function POST(request: Request) {
         }
       }
 
-      // 5) ลบสล็อตเกิน 30 วัน
-      const courtIds = courts.map((c) => c.courtId);
+      // 6) ลบสล็อตเกิน 30 วัน
+      const courtIds = courts.map((c) => c.id);
       await slotTimeRepo.delete({
         court_id: In(courtIds),
         booking_date: new Date(endDate.toISOString().split('T')[0]),

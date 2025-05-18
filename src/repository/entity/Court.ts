@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn} from 'typeorm';
 import { Status } from './status';
 
-@Entity({ name: 'Court' })
+@Entity({ name: 'court' })
 export class Court {
   @PrimaryGeneratedColumn({ name: 'court_id', type: 'int8' })
   id!: number;
@@ -15,7 +15,7 @@ export class Court {
   @Column({ name: 'time', type: 'text' })
   time!: string;
 
-  @Column({ name: 'price', type: 'text' })
+  @Column({ name: 'price_hour', type: 'text' })
   price!: string;
 
   @Column({ name: 'paymentTime', type: 'text' })
