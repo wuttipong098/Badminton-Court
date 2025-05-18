@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDbConnection } from '@/repository/db_connection';
 import { stadium } from '@/repository/entity/stadium';
 import { imageow } from '@/repository/entity/imageow';
+import { Court } from '@/repository/entity/Court';
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
       bookingRules: string[];
       payment_time: string[];
       price: string[];
-      closeDates: string[]; // เพิ่ม closeDates
+      closeDates: string[];
     };
 
     let result: BookingSettingData = {
@@ -32,11 +33,11 @@ export async function POST(request: Request) {
       bookingRules: [],
       payment_time: [],
       price: [],
-      closeDates: [], // เริ่มต้นเป็น array ว่าง
+      closeDates: [],
     };
 
     await getDbConnection(async (manager) => {
-      // 1) ดึง location, image_slip, paymentTime, price, closeDates
+      // 1) ดึงข้อมูลจาก stadium
       const stadRepo = manager.getRepository(stadium);
       const stad = await stadRepo.findOne({
         where: { user_id: userId, stadium_id: stadiumId },
@@ -64,13 +65,6 @@ export async function POST(request: Request) {
             ? [stad.paymentTime]
             : [];
 
-        // price
-        result.price = Array.isArray(stad.price)
-          ? stad.price
-          : typeof stad.price === 'string'
-            ? [stad.price]
-            : [];
-
         // closeDates
         if (stad.closeDates) {
           try {
@@ -93,6 +87,18 @@ export async function POST(request: Request) {
       result.courtImages = images.map((img) =>
         `data:image/jpeg;base64,${img.image_stadium.toString('base64')}`
       );
+
+      // 3) ดึง price จาก Court
+      const courtRepo = manager.getRepository(Court);
+      const courts = await courtRepo.find({
+        where: { stadiumId },
+        select: ['price'], // ดึงแค่ price
+      });
+
+      // รวม price จากทุก court เป็น array
+      result.price = courts
+        .map((court) => (court.price !== null && court.price !== undefined ? court.price.toString() : ''))
+        .filter((price) => price !== ''); // ลบค่า null/undefined
     });
 
     return NextResponse.json(
