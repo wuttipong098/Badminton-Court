@@ -12,7 +12,7 @@ export const insertBooking = async (params: CreateAccountParams) => {
     newBooking.end_time = params.EndTime!;
     newBooking.total_price = params.TotalPrice!;
     newBooking.booking_date = params.BookingDate!;
-    newBooking.status_id = 1; // กำหนด StatusID = 1 เสมอเมื่อสร้าง
+    newBooking.status_id = 1; 
     newBooking.created_date = new Date();
     newBooking.update_date = null;
 

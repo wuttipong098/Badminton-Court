@@ -25,14 +25,14 @@ export class stadium {
   @Column({ name: 'image_slip', type: 'bytea', nullable: true })
   image_slip: Buffer | null = null;
 
-  @Column({ name: 'price', type: 'text' })
-  price!: string;
+  // @Column({ name: 'price', type: 'text' })
+  // price!: string;
 
-  @Column({ name: 'paymenttime', type: 'text' })
-  paymentTime!: string;
+  // @Column({ name: 'paymenttime', type: 'text' })
+  // paymentTime!: string;
 
-  @Column({ name: 'closedates', type: 'text' }) // เก็บ JSON string
-  closeDates!: string | null;
+  // @Column({ name: 'closedates', type: 'text' }) // เก็บ JSON string
+  // closeDates!: string | null;
 
   @OneToMany(() => require('./imageow').imageow, (image: any) => image.stadium, { cascade: true })
   images!: any[];
