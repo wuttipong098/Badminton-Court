@@ -3,21 +3,44 @@ import { getDbConnection } from '@/repository/db_connection';
 import { bookings } from '@/repository/entity/bookings';
 import { Court } from '@/repository/entity/Court';
 import { user } from '@/repository/entity/login';
+import { stadium } from '@/repository/entity/stadium';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const searchTerm = searchParams.get('searchTerm') || '';
-    console.log('Fetching bookings with searchTerm:', searchTerm);
+    const userId = searchParams.get('userId'); // รับ userId จาก query params
+    console.log('Fetching bookings with searchTerm and userId:', { searchTerm, userId });
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: 'Missing userId' },
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     return await getDbConnection(async (manager) => {
       console.log('Connected to database successfully');
       const bookingRepo = manager.getRepository(bookings);
+      const stadiumRepo = manager.getRepository(stadium);
 
       if (!bookingRepo) {
         console.error('Booking repository is not available');
         throw new Error('Booking repository is not available');
       }
+
+      // ดึง stadiumId จากตาราง stadium โดยใช้ userId
+      const stadiumData = await stadiumRepo.findOne({
+        where: { user_id: parseInt(userId) },
+        select: ['stadium_id'],
+      });
+      if (!stadiumData) {
+        return NextResponse.json(
+          { success: false, message: 'No stadium found for user' },
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      const stadiumId = stadiumData.stadium_id;
 
       const query = bookingRepo
         .createQueryBuilder('booking')
@@ -33,10 +56,11 @@ export async function GET(request: Request) {
           'booking.end_time AS end',
           'booking.booking_date AS bookingdate',
           'booking.created_date AS createddate',
-          'booking.money_slip AS money_slip', // เพิ่มการเลือก money_slip
+          'booking.money_slip AS money_slip',
           'booking.status_id AS status_id',
         ])
-        .where('booking.status_id = :statusId', { statusId: 3 });
+        .where('booking.status_id = :statusId', { statusId: 3 })
+        .andWhere('court.stadiumId = :stadiumId', { stadiumId }); // กรองตาม stadiumId
 
       if (searchTerm) {
         query.andWhere(
@@ -58,7 +82,6 @@ export async function GET(request: Request) {
       }
 
       const formattedBookings = rawBookings.map((booking) => {
-        // แปลง money_slip (Buffer) เป็น Base64
         const slipBase64 = booking.money_slip
           ? `data:image/jpeg;base64,${Buffer.from(booking.money_slip).toString('base64')}`
           : '';
@@ -73,8 +96,8 @@ export async function GET(request: Request) {
           statusId: booking.status_id,
           bookingDate: booking.bookingdate ? booking.bookingdate.toISOString().split('T')[0] : 'N/A',
           createdDate: booking.createddate ? booking.createddate.toISOString().split('T')[0] : 'N/A',
-          paymentStatus: booking.money_slip ? 'paid' : 'unpaid', // ใช้ money_slip เพื่อกำหนด paymentStatus
-          slipUrl: slipBase64, // ส่ง Base64 string แทน URL
+          paymentStatus: booking.money_slip ? 'paid' : 'unpaid',
+          slipUrl: slipBase64,
         };
       });
 
