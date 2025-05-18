@@ -121,34 +121,74 @@ const StadiumPage = () => {
         // คำนวณราคาโดยใช้ PriceHour จาก court ของแต่ละสล็อต
         const totalPrice = selectedTimeSlots.reduce((total, slot) => {
             const court = courts.find(c => c.CourtNumber === slot.court);
-            const pricePerSlot = court ? court.PriceHour : 0; // ใช้ PriceHour หรือ 0 ถ้าไม่พบ
+            const pricePerSlot = court ? court.PriceHour : 0;
             return total + pricePerSlot;
         }, 0);
 
-        // เตรียมข้อมูลสำหรับบันทึกลง localStorage
-        const bookingData = {
-            userId,
-            stadiumId,
-            bookingDate,
-            slots: selectedTimeSlots.map(slot => {
+        // เรียง selectedTimeSlots ตาม StartTime จากน้อยไปมาก
+        const sortedSlots = [...selectedTimeSlots].sort((a, b) => {
+            return a.StartTime.localeCompare(b.StartTime);
+        });
+
+        // สร้างรายการสล็อตที่เลือกสำหรับแสดงใน Swal
+        const slotDetails = sortedSlots
+            .map(slot => {
                 const court = courts.find(c => c.CourtNumber === slot.court);
-                const pricePerSlot = court ? court.PriceHour : 0; // ใช้ PriceHour สำหรับแต่ละสล็อต
-                return {
-                    courtId: slot.court,
-                    slotTime: `${slot.StartTime.slice(0, 5)} - ${slot.EndTime.slice(0, 5)}`,
-                    startTime: slot.StartTime,
-                    endTime: slot.EndTime,
-                    price: pricePerSlot,
+                const pricePerSlot = court ? court.PriceHour : 0;
+                return `สนามที่ ${slot.court}: ${slot.StartTime.slice(0, 5)} - ${slot.EndTime.slice(0, 5)} (฿${pricePerSlot})`;
+            })
+            .join('<br>');
+
+        // แสดง SweetAlert2 เพื่อยืนยันการจอง
+        MySwal.fire({
+            title: 'ยืนยันการจอง',
+            html: `
+                <div style="text-align: left;">
+                    <p><strong>สนาม:</strong> ${stadiumName}</p>
+                    <p><strong>วันที่:</strong> ${formatThaiDate(bookingDate)}</p>
+                    <p><strong>รายการที่เลือก:</strong></p>
+                    <p>${slotDetails}</p>
+                    <p><strong>ราคารวม:</strong> ฿${totalPrice}</p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก',
+            reverseButtons: true,
+            customClass: {
+                confirmButton: 'bg-green-500 text-white px-6 py-2 rounded font-medium mx-2 cursor-pointer',
+                cancelButton: 'bg-red-500 text-white px-6 py-2 rounded font-medium mx-2 cursor-pointer',
+            },
+            buttonsStyling: false, // ปิดการใช้สไตล์เริ่มต้นของ SweetAlert2
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // เตรียมข้อมูลสำหรับบันทึกลง localStorage
+                const bookingData = {
+                    userId,
+                    stadiumId,
+                    bookingDate,
+                    slots: selectedTimeSlots.map(slot => {
+                        const court = courts.find(c => c.CourtNumber === slot.court);
+                        const pricePerSlot = court ? court.PriceHour : 0;
+                        return {
+                            courtId: slot.court,
+                            slotTime: `${slot.StartTime.slice(0, 5)} - ${slot.EndTime.slice(0, 5)}`,
+                            startTime: slot.StartTime,
+                            endTime: slot.EndTime,
+                            price: pricePerSlot,
+                        };
+                    }),
+                    total_price: totalPrice,
                 };
-            }),
-            total_price: totalPrice,
-        };
 
-        // บันทึกข้อมูลลง localStorage
-        localStorage.setItem('bookingData', JSON.stringify(bookingData));
+                // บันทึกข้อมูลลง localStorage
+                localStorage.setItem('bookingData', JSON.stringify(bookingData));
 
-        // เปลี่ยนเส้นทางไปยังหน้าชำระเงิน
-        router.push('/BadmintonCourt/reservation/payment');
+                // เปลี่ยนเส้นทางไปยังหน้าชำระเงิน
+                router.push('/BadmintonCourt/reservation/payment');
+            }
+        });
     };
 
     const handleTimeSlotClick = (slot: TimeSlot, courtIndex: number) => {
@@ -207,9 +247,8 @@ const StadiumPage = () => {
             return (
                 <button
                     key={index}
-                    className={`${styles.timebox} ${
-                        isSelected ? styles.selected : ""
-                    } ${statusClass}`}
+                    className={`${styles.timebox} ${isSelected ? styles.selected : ""
+                        } ${statusClass}`}
                     onClick={() => handleTimeSlotClick(slot, courtIndex)}
                     disabled={slot.StatusName === "ไม่ว่าง" || slot.StatusName === "กำลังจอง"}
                 >
@@ -245,15 +284,17 @@ const StadiumPage = () => {
                         <button className={styles.button} onClick={handleClick}>
                             จอง
                         </button>
+                        <button className={styles.aday}>
+                            เพิ่มวันจอง
+                        </button>
                     </div>
                 </div>
                 <div className="mt-20">
                     {courts.map((courtItem) => (
                         <div key={courtItem.CourtNumber}>
                             <div
-                                className={`${
-                                    courtItem.CourtNumber === 1 ? styles["mt-25-custom"] : "mt-2"
-                                } mb-6 p-4`}
+                                className={`${courtItem.CourtNumber === 1 ? styles["mt-25-custom"] : "mt-2"
+                                    } mb-6 p-4`}
                             >
                                 <Image
                                     src={courtImage}

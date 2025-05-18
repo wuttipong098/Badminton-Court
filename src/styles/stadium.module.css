@@ -89,6 +89,7 @@
     border-radius: 10px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    margin-right: 20px;
 }
 
 .button:hover {
@@ -201,3 +202,19 @@
     color: white;
     cursor: not-allowed;
 }
+
+.aday {
+    background-color: #F39C12; 
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.aday:hover {
+    background-color: #E67E22; 
+}
+
