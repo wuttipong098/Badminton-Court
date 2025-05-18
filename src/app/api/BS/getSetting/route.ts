@@ -1,95 +1,113 @@
-// app/api/BS/getSetting/route.ts
-import { NextResponse } from 'next/server'
-import { getDbConnection } from '@/repository/db_connection'
-import { stadium } from '@/repository/entity/stadium'
-import { bookingRule } from '@/repository/entity/bookingRule'
-import { imageow } from '@/repository/entity/imageow'
+import { NextResponse } from 'next/server';
+import { getDbConnection } from '@/repository/db_connection';
+import { stadium } from '@/repository/entity/stadium';
+import { imageow } from '@/repository/entity/imageow';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { userId, stadiumId } = body
+    const body = await request.json();
+    const { userId, stadiumId } = body;
 
     if (!userId || !stadiumId) {
       return NextResponse.json(
         { status_code: 400, status_message: 'Missing userId or stadiumId' },
         { status: 400 }
-      )
+      );
     }
 
     type BookingSettingData = {
-      locationMessages: string[]
-      slipImages:       string[]
-      courtImages:      string[]
-      bookingRules:     string[]
-    }
+      locationMessages: string[];
+      slipImages: string[];
+      courtImages: string[];
+      bookingRules: string[];
+      payment_time: string[];
+      price: string[];
+      closeDates: string[]; // เพิ่ม closeDates
+    };
 
     let result: BookingSettingData = {
       locationMessages: [],
-      slipImages:       [],
-      courtImages:      [],
-      bookingRules:     [],
-    }
+      slipImages: [],
+      courtImages: [],
+      bookingRules: [],
+      payment_time: [],
+      price: [],
+      closeDates: [], // เริ่มต้นเป็น array ว่าง
+    };
 
     await getDbConnection(async (manager) => {
-      //
-      // 1) ดึง location + image_slip
-      //
-      const stadRepo = manager.getRepository(stadium)
+      // 1) ดึง location, image_slip, paymentTime, price, closeDates
+      const stadRepo = manager.getRepository(stadium);
       const stad = await stadRepo.findOne({
         where: { user_id: userId, stadium_id: stadiumId },
-      })
+      });
 
       if (stad) {
-        // ถ้า location เป็น string ก็แปลงเป็น array
+        // location
         if (Array.isArray(stad.location)) {
-          result.locationMessages = stad.location
+          result.locationMessages = stad.location;
         } else if (typeof stad.location === 'string') {
-          result.locationMessages = [stad.location]
+          result.locationMessages = [stad.location];
         }
 
-        // ถ้า image_slip เป็น Buffer เดี่ยว
+        // image_slip
         if (stad.image_slip instanceof Buffer) {
           result.slipImages = [
-            `data:image/jpeg;base64,${stad.image_slip.toString('base64')}`
-          ]
+            `data:image/jpeg;base64,${stad.image_slip.toString('base64')}`,
+          ];
+        }
+
+        // payment_time
+        result.payment_time = Array.isArray(stad.paymentTime)
+          ? stad.paymentTime
+          : typeof stad.paymentTime === 'string'
+            ? [stad.paymentTime]
+            : [];
+
+        // price
+        result.price = Array.isArray(stad.price)
+          ? stad.price
+          : typeof stad.price === 'string'
+            ? [stad.price]
+            : [];
+
+        // closeDates
+        if (stad.closeDates) {
+          try {
+            const parsedDates = JSON.parse(stad.closeDates);
+            if (Array.isArray(parsedDates)) {
+              result.closeDates = parsedDates;
+            }
+          } catch (e) {
+            console.warn(`Failed to parse closeDates for stadium ${stadiumId}:`, e);
+            result.closeDates = [];
+          }
         }
       }
 
-      //
-      // 2) ดึง booking rules
-      //
-      const ruleRepo = manager.getRepository(bookingRule)
-      const rules = await ruleRepo.find({
-        where: { user_id: userId }, // ไม่ต้องกรอง stadium_id ถ้า schema ไม่มี field นี้
-      })
-      result.bookingRules = rules.map((r) => r.rule_name)
-
-      //
-      // 3) ดึง court images
-      //
-      const imgRepo = manager.getRepository(imageow)
+      // 2) ดึง court images
+      const imgRepo = manager.getRepository(imageow);
       const images = await imgRepo.find({
         where: { user_id: userId, stadium_id: stadiumId },
-      })
+      });
       result.courtImages = images.map((img) =>
         `data:image/jpeg;base64,${img.image_stadium.toString('base64')}`
-      )
-    })
+      );
+    });
 
     return NextResponse.json(
       {
-        status_code:    200,
+        status_code: 200,
         status_message: 'Success',
-        data:           result,
+        data: result,
       },
       { status: 200 }
-    )
+    );
   } catch (err: any) {
-    console.error('❌ /api/BS/getSetting error:', err)
+    console.error('❌ /api/BS/getSetting error:', err);
     return NextResponse.json(
       { status_code: 500, status_message: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }

@@ -27,6 +27,7 @@ const BookingSettings = () => {
   const [timeRanges, setTimeRanges] = useState<TimeRange[]>([]);
   const [price, setPrice] = useState(0);
   const [paymentTime, setPaymentTime] = useState(0);
+  const [active, setActive] = useState(true);
 
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   const minutes = ["00", "30"];
@@ -73,6 +74,7 @@ const BookingSettings = () => {
       paymentTime,
       userId,
       stadiumId,
+      active,
     };
 
     try {
@@ -115,7 +117,7 @@ const BookingSettings = () => {
     <div className="min-h-screen bg-white p-6 rounded-lg shadow-md mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-green-700">
-          ตั้งค่าการจองสำหรับสนามที่ {courtId}
+          ตั้งค่าการจองสำหรับคอร์ดที่ {courtId}
         </h2>
         <button
           className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
@@ -127,28 +129,28 @@ const BookingSettings = () => {
 
       {/* สนามที่ */}
       <fieldset className="mb-6 border border-gray-300 bg-white rounded-lg p-4">
-        <legend className="text-lg font-semibold text-black px-2">การตั้งสนาม</legend>
-        <label className="block mt-2 text-black font-medium">สนามที่ :</label>
+        <legend className="text-lg font-semibold text-black px-2">การตั้งคอร์ด</legend>
+        <label className="block mt-2 text-black font-medium">คอร์ดที่ :</label>
         <input
           type="number"
           className="border p-2 w-full mt-1 text-black bg-white"
           value={courtId ?? ""}
           onChange={(e) => setCourtId(Number(e.target.value))}
         />
-      </fieldset>
 
-      {/* ราคา */}
-      <fieldset className="mb-6 border border-gray-300 bg-white rounded-lg p-4">
-        <legend className="text-lg font-semibold text-black px-2">💰 การตั้งค่าราคา</legend>
-        <label className="block mt-2 text-black font-medium">ราคาจอง (บาท):</label>
-        <input
-          type="number"
-          className="border p-2 w-full mt-1 text-black bg-white"
-          value={price}
-          onChange={(e) => setPrice(Number(e.target.value))}
-        />
+        <label className="block mt-4 text-black font-medium">
+          เปิดใช้งานคอร์ดนี้ :
+        </label>
+        <div className="flex items-center space-x-3 mt-1">
+          <input
+            type="checkbox"
+            checked={active}
+            onChange={() => setActive(!active)}
+            className="w-5 h-5"
+          />
+          <span className="text-black font-medium">{active ? "เปิดอยู่ ✅" : "ปิดอยู่ ❌"}</span>
+        </div>
       </fieldset>
-
       {/* ช่วงเวลา */}
       <fieldset className="mb-6 border border-gray-300 bg-white rounded-lg p-4">
         <legend className="text-lg font-semibold text-black px-2">🕒 ช่วงเวลาเปิดให้จอง</legend>
@@ -190,18 +192,6 @@ const BookingSettings = () => {
             ))}
           </div>
         )}
-      </fieldset>
-
-      {/* ชำระเงินภายใน */}
-      <fieldset className="mb-6 border border-gray-300 bg-white rounded-lg p-4">
-        <legend className="text-lg font-semibold text-black px-2">💳 การชำระเงิน</legend>
-        <label className="block text-black font-medium">ชำระเงินภายใน (นาที):</label>
-        <input
-          type="number"
-          className="border p-2 w-full mt-1 text-black bg-white"
-          value={paymentTime}
-          onChange={(e) => setPaymentTime(Number(e.target.value))}
-        />
       </fieldset>
 
       <button
