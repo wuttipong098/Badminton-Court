@@ -32,9 +32,16 @@ export default function ApproveBookings() {
   const router = useRouter();
 
   const fetchBookings = async () => {
+    const userId = localStorage.getItem('userID');
+    if (!userId) {
+      setError('User not logged in');
+      toast.error('User not logged in');
+      return;
+    }
+
     try {
       console.log('Fetching from /api/BS/getBookingApprovals...');
-      const res = await fetch('/api/BS/getBookingApprovals', {
+      const res = await fetch(`/api/BS/getBookingApprovals?userId=${userId}`, {
         headers: {
           'Accept': 'application/json',
         },
@@ -70,10 +77,12 @@ export default function ApproveBookings() {
       } else {
         setError(json.message || 'Failed to fetch bookings');
         console.error('Failed to fetch bookings:', json.message);
+        toast.error(json.message || 'Failed to fetch bookings');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred while fetching bookings');
       console.error('Fetch error:', err);
+      toast.error(err.message || 'An error occurred while fetching bookings');
     }
   };
 
@@ -97,7 +106,7 @@ export default function ApproveBookings() {
         setBookings(bookings.map(b => (b.id === id ? { ...b, status: 'approved' } : b)));
         setFilteredBookings(filteredBookings.map(b => (b.id === id ? { ...b, status: 'approved' } : b)));
         toast.success('อนุมัติสำเร็จ!', { autoClose: 1000 });
-        setTimeout(() => fetchBookings(), 1000); // เรียก fetchBookings แทน router.refresh()
+        setTimeout(() => fetchBookings(), 1000);
       } else {
         setError(json.message || 'Failed to approve booking');
         toast.error(json.message || 'Failed to approve booking');
@@ -127,7 +136,7 @@ export default function ApproveBookings() {
         setBookings(bookings.map(b => (b.id === id ? { ...b, status: 'rejected' } : b)));
         setFilteredBookings(filteredBookings.map(b => (b.id === id ? { ...b, status: 'rejected' } : b)));
         toast.success('ปฏิเสธสำเร็จ!', { autoClose: 1000 });
-        setTimeout(() => fetchBookings(), 1000); // เรียก fetchBookings แทน router.refresh()
+        setTimeout(() => fetchBookings(), 1000);
       } else {
         setError(json.message || 'Failed to reject booking');
         toast.error(json.message || 'Failed to reject booking');
