@@ -3,20 +3,75 @@
 import styles from '@/styles/account.module.css';
 import Image from "next/image";
 import ball from "@/public/ball.png";
-import accout from "@/public/kis.jpg";
-import { FaUser, FaEnvelope, FaPhone } from 'react-icons/fa';
-import { useEffect, useState } from 'react';
+import accout from "@/public/account.png";
+import { FaUser, FaEnvelope, FaPhone, FaEdit } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+
+const MySwal = withReactContent(Swal);
 
 const AccountPage = () => {
     const [imageFile, setImageFile] = useState<string | null>(null);
-    const [errors, setErrors] = useState({ name: "", email: "", phone: "" });
-    const [isSubmitted, setIsSubmitted] = useState(false); // เช็คว่ากด "ยืนยัน" แล้วหรือยัง
+    const [isImageChanged, setIsImageChanged] = useState(false);
+    const [userID, setUserID] = useState<number | null>(null);
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [email, setEmail] = useState("");
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [isEditingPhone, setIsEditingPhone] = useState(false);
+    const [initialFirstName, setInitialFirstName] = useState("");
+    const [initialLastName, setInitialLastName] = useState("");
+    const [initialPhone, setInitialPhone] = useState("");
+    const [initialImageFile, setInitialImageFile] = useState<string | null>(null);
 
-    const [userData, setUserData] = useState({
-        name: "นาย วุฒิพงษ์ กระชั้น",
-        email: "Acenpwk@gmail.com",
-        phone: "0935466494",
-    });
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedUserID = localStorage.getItem('userID');
+            if (storedUserID) {
+                setUserID(parseInt(storedUserID));
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (userID) {
+                try {
+                    const response = await fetch('/api/account', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ UserID: userID }),
+                    });
+                    const result = await response.json();
+                    if (result.status_code === 200 && result.data.length > 0) {
+                        const user = result.data[0];
+                        setFirstName(user.FirstName || "");
+                        setLastName(user.LastName || "");
+                        setPhone(user.PhoneNumber || "");
+                        setEmail(user.UserName || "");
+                        setImageFile(user.Profile || null);
+                        setInitialFirstName(user.FirstName || "");
+                        setInitialLastName(user.LastName || "");
+                        setInitialPhone(user.PhoneNumber || "");
+                        setInitialImageFile(user.Profile || null);
+                    }
+                } catch (error) {
+                    console.error('เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้:', error);
+                    MySwal.fire({
+                        icon: 'error',
+                        title: 'ข้อผิดพลาด',
+                        text: 'ไม่สามารถดึงข้อมูลผู้ใช้ได้',
+                    });
+                }
+            }
+        };
+
+        fetchUserData();
+    }, [userID]);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -24,49 +79,98 @@ const AccountPage = () => {
             const reader = new FileReader();
             reader.onload = () => {
                 if (reader.result) {
-                    setImageFile(reader.result.toString());
+                    setImageFile(reader.result.toString().split(',')[1]);
+                    setIsImageChanged(true);
                 }
             };
             reader.readAsDataURL(file);
         }
     };
 
-    const validateInput = () => {
-        let newErrors = { name: "", email: "", phone: "" };
-
-        if (userData.name.trim() === "") {
-            newErrors.name = "ชื่อห้ามเว้นว่าง";
-        }
-        if (!/^\S+@\S+\.\S+$/.test(userData.email)) {
-            newErrors.email = "รูปแบบอีเมลไม่ถูกต้อง";
-        }
-        if (!/^\d{10}$/.test(userData.phone)) {
-            newErrors.phone = "เบอร์โทรต้องมี 10 หลัก";
+    const handleConfirm = async () => {
+        if (!firstName || !lastName || !phone || !email) {
+            MySwal.fire({
+                icon: 'error',
+                title: 'ข้อมูลไม่ครบถ้วน',
+                text: 'กรุณากรอกข้อมูลให้ครบทุกช่อง',
+            });
+            return;
         }
 
-        setErrors(newErrors);
-        return Object.values(newErrors).every((err) => err === ""); // คืนค่า true ถ้าผ่าน validation
+        const result = await MySwal.fire({
+            title: 'ยืนยันการแก้ไข',
+            text: 'จะทำการแก้ไขข้อมูลหรือไม่?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'ใช่',
+            cancelButtonText: 'ไม่',
+            confirmButtonColor: '#379DD6',
+            cancelButtonColor: '#d33',
+        });
+
+        if (result.isConfirmed && userID) {
+            try {
+                const updateData = {
+                    UserID: userID,
+                    FirstName: firstName,
+                    LastName: lastName,
+                    PhoneNumber: phone,
+                    UserName: email,
+                    Profile: imageFile,
+                };
+
+                const response = await fetch('/api/account', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(updateData),
+                });
+
+                const responseData = await response.json();
+                if (responseData.status_code === 200) {
+                    await MySwal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ',
+                        text: 'แก้ไขข้อมูลสำเร็จแล้ว',
+                    });
+                    localStorage.setItem('firstName', firstName);
+                    localStorage.setItem('lastName', lastName);
+                    localStorage.setItem('phone', phone);
+                    setIsEditingName(false);
+                    setIsEditingPhone(false);
+                    setIsImageChanged(false);
+                    setInitialFirstName(firstName);
+                    setInitialLastName(lastName);
+                    setInitialPhone(phone);
+                    setInitialImageFile(imageFile);
+                } else {
+                    await MySwal.fire({
+                        icon: 'error',
+                        title: 'ข้อผิดพลาด',
+                        text: `ไม่สามารถอัปเดตข้อมูลผู้ใช้: ${responseData.status_message}`,
+                    });
+                    console.error("ไม่สามารถอัปเดตข้อมูลผู้ใช้:", responseData.status_message);
+                }
+            } catch (error) {
+                await MySwal.fire({
+                    icon: 'error',
+                    title: 'ข้อผิดพลาด',
+                    text: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูลผู้ใช้',
+                });
+                console.error('เกิดข้อผิดพลาดในการอัปเดตข้อมูลผู้ใช้:', error);
+            }
+        }
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>, field: "name" | "email" | "phone") => {
-        setUserData((prev) => ({ ...prev, [field]: e.target.value }));
-    };
-
-    useEffect(() => {
-        if (userData.phone.length > 10) {
-            setErrors((prev) => ({ ...prev, phone: "เบอร์โทรต้องมีไม่เกิน 10 หลัก" }));
-        } else if (!/^\d{10}$/.test(userData.phone) && userData.phone.length === 10) {
-            setErrors((prev) => ({ ...prev, phone: "เบอร์โทรต้องเป็นตัวเลข 10 หลัก" }));
-        } else {
-            setErrors((prev) => ({ ...prev, phone: "" })); // เคลียร์ error ถ้าถูกต้อง
-        }
-    }, [userData.phone]);
-
-    const handleSubmit = () => {
-        setIsSubmitted(true); // ทำให้ error message ปรากฏเมื่อกดปุ่ม
-        if (validateInput()) {
-            alert("บันทึกข้อมูลสำเร็จ! ✅"); // หรือเปลี่ยนเป็นส่งข้อมูลไป backend
-        }
+    const handleCancel = () => {
+        setFirstName(initialFirstName);
+        setLastName(initialLastName);
+        setPhone(initialPhone);
+        setImageFile(initialImageFile);
+        setIsEditingName(false);
+        setIsEditingPhone(false);
+        setIsImageChanged(false);
     };
 
     return (
@@ -81,16 +185,25 @@ const AccountPage = () => {
                 </div>
             </div>
 
-            {/* รูปภาพโปรไฟล์และปุ่มอัปโหลด */}
             <div className="flex flex-col items-center mt-10 px-5">
                 <div className="mb-6 relative">
-                    <Image
-                        src={imageFile || accout}
-                        alt="Profile Picture"
-                        width={120}
-                        height={120}
-                        className="rounded-lg border-4 border-white shadow-lg"
-                    />
+                    {imageFile ? (
+                        <Image
+                            src={`data:image/jpeg;base64,${imageFile}`}
+                            alt="รูปโปรไฟล์"
+                            width={120}
+                            height={120}
+                            className="rounded-lg border-4 border-white shadow-lg"
+                        />
+                    ) : (
+                        <Image
+                            src={accout}
+                            alt="รูปโปรไฟล์เริ่มต้น"
+                            width={120}
+                            height={120}
+                            className="rounded-lg border-4 border-white shadow-lg"
+                        />
+                    )}
                     <input
                         type="file"
                         accept="image/*"
@@ -100,66 +213,86 @@ const AccountPage = () => {
                 </div>
 
                 <div className="w-full max-w-md space-y-4">
-                    {/* User ID (สีเทา ห้ามแก้ไข) */}
                     <div className="flex items-center bg-white p-3 rounded-lg shadow-md">
-                        <FaUser className="text-gray-400 mr-3" size={24} />
-                        <span className="text-gray-400 font-medium cursor-not-allowed select-none">
-                            000001
-                        </span>
+                        <FaUser className="text-gray-600 mr-3" size={24} />
+                        <span className="text-gray-800 font-medium">{userID || "00001"}</span>
                     </div>
-
-                    {/* Name */}
-                    <div className="bg-white p-3 rounded-lg shadow-md">
-                        <div className="flex items-center">
-                            <FaUser className="text-gray-600 mr-3" size={24} />
-                            <input
-                                type="text"
-                                value={userData.name}
-                                onChange={(e) => handleChange(e, "name")}
-                                className="border-none focus:outline-none w-full bg-transparent text-gray-800 font-medium"
-                            />
-                        </div>
-                        {isSubmitted && errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                    </div>
-
-                    {/* Email */}
-                    <div className="bg-white p-3 rounded-lg shadow-md">
+                    <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-md">
                         <div className="flex items-center">
                             <FaEnvelope className="text-gray-600 mr-3" size={24} />
-                            <input
-                                type="email"
-                                value={userData.email}
-                                onChange={(e) => handleChange(e, "email")}
-                                className="border-none focus:outline-none w-full bg-transparent text-gray-800 font-medium"
-                            />
+                            <span className="text-gray-800 font-medium">{email || "Acenpwk@gmail.com"}</span>
                         </div>
-                        {isSubmitted && errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                     </div>
-
-                    {/* Phone */}
-                    <div className="bg-white p-3 rounded-lg shadow-md">
-                        <div className="flex items-center">
+                    <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-md">
+                        <div className="flex items-center w-full">
+                            <FaUser className="text-gray-600 mr-3" size={24} />
+                            {isEditingName ? (
+                                <div className="flex items-center space-x-2 flex-1">
+                                    <input
+                                        type="text"
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        className="flex-1 text-gray-800 font-medium border-b border-gray-300 focus:outline-none"
+                                        placeholder="ชื่อ"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        className="flex-1 text-gray-800 font-medium border-b border-gray-300 focus:outline-none"
+                                        placeholder="นามสกุล"
+                                    />
+                                </div>
+                            ) : (
+                                <span className="text-gray-800 font-medium">
+                                    {firstName} {lastName}
+                                </span>
+                            )}
+                        </div>
+                        <FaEdit 
+                            className="text-gray-600 cursor-pointer ml-3" 
+                            size={20} 
+                            onClick={() => setIsEditingName(!isEditingName)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-md">
+                        <div className="flex items-center w-full">
                             <FaPhone className="text-gray-600 mr-3" size={24} />
-                            <input
-                                type="number"
-                                value={userData.phone}
-                                onChange={(e) => handleChange(e, "phone")}
-                                className="border-none focus:outline-none w-full bg-transparent text-gray-800 font-medium"
-                            />
+                            {isEditingPhone ? (
+                                <input
+                                    type="text"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    className="flex-1 text-gray-800 font-medium border-b border-gray-300 focus:outline-none"
+                                    placeholder="เบอร์โทรศัพท์"
+                                />
+                            ) : (
+                                <span className="text-gray-800 font-medium">{phone}</span>
+                            )}
                         </div>
-                        {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+                        <FaEdit 
+                            className="text-gray-600 cursor-pointer ml-3" 
+                            size={20} 
+                            onClick={() => setIsEditingPhone(!isEditingPhone)}
+                        />
                     </div>
-
-                    {/* Confirm Button */}
-                    <div className="mt-6">
-                        <button
+                </div>
+                {(isEditingName || isEditingPhone || isImageChanged) && (
+                    <div className="mt-6 flex flex-row items-center space-x-4">
+                        <button 
                             className="bg-[#379DD6] text-white font-medium py-2 px-6 rounded-lg shadow-md hover:bg-[#2980b9] transition duration-300"
-                            onClick={handleSubmit}
+                            onClick={handleConfirm}
                         >
                             ยืนยัน
                         </button>
+                        <button 
+                            className="bg-[#d33] text-white font-medium py-2 px-6 rounded-lg shadow-md hover:bg-[#b32] transition duration-300"
+                            onClick={handleCancel}
+                        >
+                            ยกเลิก
+                        </button>
                     </div>
-                </div>
+                )}
             </div>
             <div className="w-full mt-20 h-20 bg-[#1F9378]"></div>
         </div>
