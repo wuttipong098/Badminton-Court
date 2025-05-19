@@ -56,8 +56,8 @@ export async function POST(request: Request) {
       if (endDate) {
         query.andWhere('booking.booking_date <= :endDate', { endDate });
       }
-      if (courtFilter && courtFilter !== 'all') {
-        query.andWhere('booking.court_id = :court', { court: courtFilter });
+      if (courtFilter && courtFilter !== "all") {
+        query.andWhere("court.court_number = :courtNumber", { courtNumber: parseInt(courtFilter) });
       }
 
       const sqlQuery = query.getSql();

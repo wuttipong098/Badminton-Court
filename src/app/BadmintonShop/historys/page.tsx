@@ -103,53 +103,53 @@ const BadmintonCourtBooking = () => {
       <ToastContainer />
       <h2 className="text-2xl font-bold mb-4 text-black">Badminton Court Booking</h2>
 
-      <div className="flex flex-wrap gap-2 justify-center mb-4">
-        <div className="flex flex-col">
-          <label className="text-black font-semibold mb-1">วันที่เริ่มต้น</label>
-          <input
-            type="date"
-            className="p-2 border rounded text-black"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            disabled={loading}
-          />
-        </div>
-        <div className="flex flex-col">
-          <label className="text-black font-semibold mb-1">วันที่สิ้นสุด</label>
-          <input
-            type="date"
-            className="p-2 border rounded text-black"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            disabled={loading}
-          />
-        </div>
-        <div className="flex flex-col">
-          <label className="text-black font-semibold mb-1">เลือกสนาม</label>
-          <select
-            className="p-2 border rounded text-black"
-            value={court}
-            onChange={(e) => setCourt(e.target.value)}
-            disabled={loading}
-          >
-            <option value="all">ทุกสนาม</option>
-            {courts.map((courtItem) => (
-              <option key={courtItem.court_number} value={courtItem.court_number}>
-                สนามที่ {courtItem.court_number}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col">
-          <label className="text-black font-semibold mb-1"> </label>
-          <button
-            onClick={filterBookings}
-            className="p-2 bg-blue-500 text-white rounded"
-            disabled={loading}
-          >
-            {loading ? "กำลังค้นหา..." : "ค้นหา"}
-          </button>
-        </div>
+      <div className="flex flex-wrap gap-4 justify-center mb-4">
+      <div className="flex flex-col min-w-[150px]">
+        <label className="text-black font-semibold mb-1">วันที่เริ่มต้น</label>
+        <input
+          type="date"
+          className="w-full h-10 p-2 border rounded text-black"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          disabled={loading}
+        />
+      </div>
+      <div className="flex flex-col min-w-[150px]">
+        <label className="text-black font-semibold mb-1">วันที่สิ้นสุด</label>
+        <input
+          type="date"
+          className="w-full h-10 p-2 border rounded text-black"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          disabled={loading}
+        />
+      </div>
+      <div className="flex flex-col min-w-[150px]">
+        <label className="text-black font-semibold mb-1">เลือกสนาม</label>
+        <select
+          className="w-full h-10 p-2 border rounded text-black"
+          value={court}
+          onChange={(e) => setCourt(e.target.value)}
+          disabled={loading}
+        >
+          <option value="all">ทุกคอร์ด</option>
+          {courts.map((courtItem) => (
+            <option key={courtItem.court_number} value={courtItem.court_number}>
+              คอร์ด {courtItem.court_number}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-col min-w-[150px]">
+        <label className="text-black font-semibold mb-1 invisible">ค้นหา</label>
+        <button
+          onClick={filterBookings}
+          className="w-full h-10 p-2 bg-blue-500 text-white rounded"
+          disabled={loading}
+        >
+          {loading ? "กำลังค้นหา..." : "ค้นหา"}
+        </button>
+      </div>
       </div>
 
       <h3 className="text-lg font-semibold">
