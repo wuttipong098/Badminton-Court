@@ -3,6 +3,7 @@ import { getDbConnection } from '@/repository/db_connection';
 import { stadium } from '@/repository/entity/stadium';
 import { imageow } from '@/repository/entity/imageow';
 import { Court } from '@/repository/entity/Court';
+import { closeDate } from '@/repository/entity/closeDate'; // 👈 import entity ใหม่
 
 export async function POST(request: Request) {
   try {
@@ -64,19 +65,6 @@ export async function POST(request: Request) {
           : typeof stad.paymentTime === 'string'
             ? [stad.paymentTime]
             : [];
-
-        // closeDates
-        if (stad.closeDates) {
-          try {
-            const parsedDates = JSON.parse(stad.closeDates);
-            if (Array.isArray(parsedDates)) {
-              result.closeDates = parsedDates;
-            }
-          } catch (e) {
-            console.warn(`Failed to parse closeDates for stadium ${stadiumId}:`, e);
-            result.closeDates = [];
-          }
-        }
       }
 
       // 2) ดึง court images
@@ -92,13 +80,31 @@ export async function POST(request: Request) {
       const courtRepo = manager.getRepository(Court);
       const courts = await courtRepo.find({
         where: { stadiumId },
-        select: ['price'], // ดึงแค่ price
+        select: ['price'],
       });
 
-      // รวม price จากทุก court เป็น array
       result.price = courts
         .map((court) => (court.price !== null && court.price !== undefined ? court.price.toString() : ''))
-        .filter((price) => price !== ''); // ลบค่า null/undefined
+        .filter((price) => price !== '');
+
+      const closeDateRepo = manager.getRepository(closeDate);
+      const closeDateRecord = await closeDateRepo.findOne({
+        where: { stadium_id: stadiumId },
+      });
+
+      if (closeDateRecord?.closeDates) {
+        try {
+          const parsedDates = JSON.parse(closeDateRecord.closeDates);
+          if (Array.isArray(parsedDates)) {
+            result.closeDates = parsedDates;
+          } else {
+            result.closeDates = [];
+          }
+        } catch (e) {
+          console.warn(`❌ Failed to parse closeDates for stadium ${stadiumId}:`, e);
+          result.closeDates = [];
+        }
+      }
     });
 
     return NextResponse.json(

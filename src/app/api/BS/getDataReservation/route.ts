@@ -3,6 +3,7 @@ import { getDbConnection } from '@/repository/db_connection';
 import { Court } from '@/repository/entity/Court';
 import { SlotTime } from '@/repository/entity/slot_time';
 import { stadium } from '@/repository/entity/stadium';
+import { closeDate } from '@/repository/entity/closeDate';
 import { In, Between } from 'typeorm';
 
 function generateTimeSlots(startTime: string, endTime: string): string[] {
@@ -67,9 +68,11 @@ export async function GET(request: Request) {
 
       const stadiumId = stad.stadium_id;
 
-      if (stad.closeDates) {
+      const a = manager.getRepository(closeDate);
+      const aa = await a.findOne({ where: { stadium_id: stadiumId } });
+      if (aa.closeDates) {
         try {
-          const closeDates = JSON.parse(stad.closeDates);
+          const closeDates = JSON.parse(aa.closeDates);
           if (Array.isArray(closeDates) && closeDates.includes(dateString)) {
             return NextResponse.json(
               { success: false, message: 'วันที่เลือกเป็นวันหยุดสนาม', data: { courts: [] } },

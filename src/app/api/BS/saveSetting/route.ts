@@ -4,6 +4,7 @@ import { stadium } from '@/repository/entity/stadium';
 import { imageow } from '@/repository/entity/imageow';
 import { Court } from '@/repository/entity/Court';
 import { SlotTime } from '@/repository/entity/slot_time';
+import { closeDate } from '@/repository/entity/closeDate';
 import { In } from 'typeorm';
 
 // ฟังก์ชันช่วยสร้างสล็อตจาก start_time ถึง end_time (สล็อตละ 1 ชั่วโมง)
@@ -71,7 +72,6 @@ export async function POST(request: Request) {
 
       stad.location = location;
       stad.paymentTime = payment_time;
-      stad.closeDates = closeDates && closeDates.length > 0 ? JSON.stringify(closeDates) : null;
 
       if (Array.isArray(slipImages) && slipImages.length > 0) {
         const base64 = slipImages[0];
@@ -82,6 +82,24 @@ export async function POST(request: Request) {
       }
 
       await stadRepo.save(stad);
+
+      const closeDateRepo = manager.getRepository(closeDate);
+      const existingCloseDate = await closeDateRepo.findOne({
+        where: { stadium_id: stadiumId },
+      });
+
+      if (existingCloseDate) {
+        // อัปเดต
+        existingCloseDate.closeDates = closeDates && closeDates.length > 0 ? JSON.stringify(closeDates) : null;
+        await closeDateRepo.save(existingCloseDate);
+      } else {
+        // สร้างใหม่
+        const newCloseDate = closeDateRepo.create({
+          stadium_id: stadiumId,
+          closeDates: closeDates && closeDates.length > 0 ? JSON.stringify(closeDates) : null,
+        });
+        await closeDateRepo.save(newCloseDate);
+      }
 
       // 3) Replace court images
       const imgRepo = manager.getRepository(imageow);
