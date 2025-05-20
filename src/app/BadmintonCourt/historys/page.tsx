@@ -10,7 +10,7 @@ import { historys } from "@/dto/response/historys";
 import { FaSearch } from "react-icons/fa";
 
 // จำนวนรายการต่อหน้า
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 // ฟังก์ชันช่วยแปลงวันที่จาก ISO 8601 เป็น DD/MM/YYYY
 const formatDate = (isoDate: string | undefined): string => {
@@ -26,15 +26,15 @@ const formatDate = (isoDate: string | undefined): string => {
   }
 };
 
-// ฟังก์ชันแปลง StatusID เป็นข้อความสถานะ
-const formatStatus = (statusID: number | undefined): string => {
+// ฟังก์ชันแปลง StatusID เป็นข้อความสถานะพร้อมสี
+const formatStatus = (statusID: number | undefined): { text: string; color: string } => {
   switch (statusID) {
     case 3:
-      return 'รอการอนุมัติ';
+      return { text: 'รอการอนุมัติ', color: '#F7B801' }; // สีเหลือง
     case 2:
-      return 'จองสำเร็จแล้ว';
+      return { text: 'จองสำเร็จแล้ว', color: '#1F9378' }; // สีเขียว
     default:
-      return '-';
+      return { text: '-', color: '#000000' }; // สีดำสำหรับสถานะอื่น ๆ
   }
 };
 
@@ -183,21 +183,29 @@ const HistoryPage = () => {
               <label className={styles.headtable}>สถานะ</label>
             </div>
             {filteredData.length > 0 ? (
-              filteredData.map((booking, index) => (
-                <div key={index} className={styles.rowtable}>
-                  <label className={styles.celltable}>{formatDate(booking.BookingDate)}</label>
-                  <label className={styles.celltable}>
-                    {booking.StartTime && booking.EndTime
-                      ? `${booking.StartTime.slice(0, 5)} - ${booking.EndTime.slice(0, 5)}`
-                      : '-'}
-                  </label>
-                  <label className={styles.celltable}>{booking.StadiumName || '-'}</label>
-                  <label className={styles.celltable}>
-                    {booking.CourtNumber ? `สนามที่ ${booking.CourtNumber}` : '-'}
-                  </label>
-                  <label className={styles.celltable}>{formatStatus(booking.StatusID)}</label>
-                </div>
-              ))
+              filteredData.map((booking, index) => {
+                const status = formatStatus(booking.StatusID);
+                return (
+                  <div key={index} className={styles.rowtable}>
+                    <label className={styles.celltable}>{formatDate(booking.BookingDate)}</label>
+                    <label className={styles.celltable}>
+                      {booking.StartTime && booking.EndTime
+                        ? `${booking.StartTime.slice(0, 5)} - ${booking.EndTime.slice(0, 5)}`
+                        : '-'}
+                    </label>
+                    <label className={styles.celltable}>{booking.StadiumName || '-'}</label>
+                    <label className={styles.celltable}>
+                      {booking.CourtNumber ? `สนามที่ ${booking.CourtNumber}` : '-'}
+                    </label>
+                    <label
+                      className={styles.celltable}
+                      style={{ color: status.color, fontWeight: 'bold' }} // กำหนดสีและตัวหนา
+                    >
+                      {status.text}
+                    </label>
+                  </div>
+                );
+              })
             ) : (
               <div className="text-gray-500 text-center mt-4">ไม่มีประวัติการจอง</div>
             )}

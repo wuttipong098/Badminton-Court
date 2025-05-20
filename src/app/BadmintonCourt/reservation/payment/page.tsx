@@ -16,12 +16,13 @@ interface BookingSlot {
   startTime: string;
   endTime: string;
   price: number;
+  bookingDate: string;
 }
 
 interface BookingData {
   userId: string;
   stadiumId: string;
-  bookingDate: string;
+  bookingDates: string[];
   slots: BookingSlot[];
   total_price: number;
 }
@@ -30,40 +31,31 @@ const PaymentPage = () => {
   const [imageFile, setImageFile] = useState<string | null>(null);
   const [apiImageSlip, setApiImageSlip] = useState<string | null>(null);
   const [bookingData, setBookingData] = useState<BookingData | null>(null);
-  const [stadiumName, setStadiumName] = useState<string>("ไม่ระบุสนาม");
+  const [stadiumName, setStadiumName] = useState<string>("ลูกขนไก่");
   const [isTimerExpired, setIsTimerExpired] = useState(false);
-  const [timerDuration, setTimerDuration] = useState<number>(900); // ค่าเริ่มต้น 15 นาที (900 วินาที)
+  const [timerDuration, setTimerDuration] = useState<number>(900);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const MySwal = withReactContent(Swal);
 
-  // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย
-  const formatThaiDate = (isoDate: string) => {
-    const [year, month, day] = isoDate.split("-");
-    const thaiYear = parseInt(year) + 543;
-    return `${day}/${month}/${thaiYear}`;
-  };
-
-  // ฟังก์ชันดึงชื่อสนาม
-  const fetchStadiumName = async (stadiumId: string) => {
+  const formatThaiDate = (isoDate: string | null | undefined): string => {
+    if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+      console.warn('Invalid date format or missing date:', isoDate);
+      return "ไม่ระบุวันที่";
+    }
     try {
-      const response = await fetch('/api/stadium', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ StadiumID: parseInt(stadiumId) }),
-      });
-      const result = await response.json();
-      if (result.status_code === 200 && result.data?.length > 0) {
-        setStadiumName(result.data[0].StadiumName || "ไม่ระบุสนาม");
-      } else {
-        setStadiumName("ไม่ระบุสนาม");
-      }
-    } catch (error) {
-      console.error('Error fetching stadium name:', error);
-      setStadiumName("ไม่ระบุสนาม");
+      const [year, month, day] = isoDate.split("-");
+      const thaiYear = parseInt(year) + 543;
+      return `${day}/${month}/${thaiYear}`;
+    } catch (error: unknown) {
+      console.error('Error formatting date:', error);
+      return "ไม่ระบุวันที่";
     }
   };
 
-  // ฟังก์ชันดึง ImageSlip
+  const fetchStadiumName = async (stadiumId: string) => {
+    setStadiumName("ลูกขนไก่");
+  };
+
   const fetchImageSlip = async (stadiumId: string) => {
     try {
       const response = await fetch('/api/imageslip', {
@@ -77,13 +69,12 @@ const PaymentPage = () => {
       } else {
         setApiImageSlip(null);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching ImageSlip:', error);
       setApiImageSlip(null);
     }
   };
 
-  // ฟังก์ชันดึง paymentTime จาก API
   const fetchPaymentTime = async (stadiumId: string) => {
     try {
       const response = await fetch('/api/timestop', {
@@ -104,28 +95,56 @@ const PaymentPage = () => {
         console.warn('No paymentTime found, using default 15 minutes');
         setTimerDuration(900);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching paymentTime:', error);
       setTimerDuration(900);
     }
   };
 
-  // ดึงข้อมูลเมื่อ component โหลด
   useEffect(() => {
     const data = localStorage.getItem('bookingData');
+    console.log('Raw data from localStorage:', data);
     if (data) {
-      const parsedData: BookingData = JSON.parse(data);
-      const adjustedSlots = parsedData.slots.map(slot => ({
-        ...slot,
-        startTime: slot.startTime.slice(0, 5),
-        endTime: slot.endTime.slice(0, 5),
-      }));
-      setBookingData({ ...parsedData, slots: adjustedSlots });
-      fetchStadiumName(parsedData.stadiumId);
-      fetchImageSlip(parsedData.stadiumId);
-      fetchPaymentTime(parsedData.stadiumId);
+      try {
+        const parsedData = JSON.parse(data);
+        console.log('Parsed bookingData:', parsedData);
+
+        const adjustedData: BookingData = {
+          userId: parsedData.userId,
+          stadiumId: parsedData.stadiumId,
+          bookingDates: parsedData.bookingDates || [parsedData.bookingDate],
+          slots: parsedData.slots.map((slot: any) => ({
+            ...slot,
+            startTime: slot.startTime.slice(0, 5),
+            endTime: slot.endTime.slice(0, 5),
+            bookingDate: slot.bookingDate || parsedData.bookingDate,
+          })),
+          total_price: parsedData.total_price,
+        };
+
+        if (!adjustedData.stadiumId || !adjustedData.userId || !adjustedData.slots || adjustedData.slots.length === 0) {
+          throw new Error("Incomplete booking data");
+        }
+
+        setBookingData(adjustedData);
+        fetchStadiumName(adjustedData.stadiumId);
+        fetchImageSlip(adjustedData.stadiumId);
+        fetchPaymentTime(adjustedData.stadiumId);
+      } catch (error: unknown) {
+        console.error('Error parsing booking data:', error);
+        let errorMessage = "เกิดข้อผิดพลาดที่ไม่รู้จัก";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        MySwal.fire("ข้อผิดพลาด", "ข้อมูลการจองไม่สมบูรณ์: " + errorMessage, "error").then(() => {
+          window.location.href = '/BadmintonCourt/reservation';
+        });
+      }
     } else {
-      MySwal.fire("ข้อผิดพลาด", "ไม่พบข้อมูลการจอง", "error");
+      console.warn('No bookingData found in localStorage');
+      MySwal.fire("ข้อผิดพลาด", "ไม่พบข้อมูลการจอง", "error").then(() => {
+        window.location.href = '/BadmintonCourt/reservation';
+      });
     }
   }, []);
 
@@ -185,7 +204,7 @@ const PaymentPage = () => {
 
     const requestBody: CreateAccountParams = {
       UserID: parseInt(bookingData.userId),
-      BookingDate: bookingData.bookingDate,
+      BookingDate: bookingData.bookingDates[0],
       Slots: bookingData.slots.map(slot => ({
         CourtId: slot.courtId,
         StartTime: slot.startTime,
@@ -222,11 +241,15 @@ const PaymentPage = () => {
           confirmButtonColor: '#379DD6',
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating booking:', error);
+      let errorMessage = "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       MySwal.fire({
         title: 'ข้อผิดพลาด',
-        text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+        text: errorMessage,
         icon: 'error',
         confirmButtonText: 'ตกลง',
         confirmButtonColor: '#379DD6',
@@ -248,7 +271,7 @@ const PaymentPage = () => {
       if (result.isConfirmed) {
         MySwal.fire('ยกเลิกสำเร็จ!', 'การจองของคุณถูกยกเลิกแล้ว', 'success');
         localStorage.removeItem('bookingData');
-        window.location.href = '/';
+        window.location.href = '/BadmintonCourt/reservation';
       }
     });
   };
@@ -276,7 +299,6 @@ const PaymentPage = () => {
         </div>
       </div>
       <div className="flex flex-col md:flex-row justify-center items-start p-6 space-x-0 md:space-x-6 space-y-6 md:space-y-0">
-        {/* QR Code Section */}
         <div className="bg-white p-6 rounded-lg shadow-xl w-full md:w-1/3 min-h-[600px]">
           <div className={styles.QR}>
             <label>QR แสกนชำระเงิน</label>
@@ -294,7 +316,6 @@ const PaymentPage = () => {
           )}
         </div>
 
-        {/* Booking Details Section */}
         <div className="bg-white p-6 rounded-lg shadow-xl w-full md:w-1/3 min-h-[600px]">
           <div className={styles.information1}>
             <label>รายละเอียดการจอง</label>
@@ -302,23 +323,32 @@ const PaymentPage = () => {
           <div className="mt-6 space-y-3 text-gray-800">
             <p className="text-lg font-semibold mt-4">ชื่อสนาม</p>
             <p className="text-lg" style={{ color: '#1F9378' }}>{stadiumName}</p>
-            <p className="text-lg font-semibold mt-4">วันที่จอง</p>
-            <p className="text-lg" style={{ color: '#1F9378' }}>
-              {bookingData ? formatThaiDate(bookingData.bookingDate) : "ไม่ระบุวันที่"}
-            </p>
-            <p className="text-lg font-semibold mt-4">สนาม&เวลา</p>
-            <div className="flex flex-wrap gap-4 text-lg">
-              {bookingData && bookingData.slots.length > 0 ? (
-                bookingData.slots.map((slot, index) => (
-                  <p key={index}>
-                    <span style={{ color: '#1F9378' }}>สนามที่ {slot.courtId}</span>
-                    <span style={{ color: '#379DD6' }}>: {slot.startTime} - {slot.endTime}</span>
+            {bookingData && bookingData.slots.length > 0 ? (
+              Object.entries(
+                bookingData.slots.reduce((acc, slot) => {
+                  const date = slot.bookingDate;
+                  if (!acc[date]) acc[date] = [];
+                  acc[date].push(slot);
+                  return acc;
+                }, {} as Record<string, BookingSlot[]>)
+              ).map(([date, slots]) => (
+                <div key={date}>
+                  <p className="text-lg font-semibold" style={{ color: '#000000' }}>
+                    สนาม&เวลาของวันที่ {formatThaiDate(date)}
                   </p>
-                ))
-              ) : (
-                <p style={{ color: '#1F9378' }}>ไม่มีสล็อตที่เลือก</p>
-              )}
-            </div>
+                  <div className="flex flex-wrap gap-4 text-lg">
+                    {slots.map((slot, index) => (
+                      <p key={index}>
+                        <span style={{ color: '#1F9378' }}>สนามที่ {slot.courtId}</span>
+                        <span style={{ color: '#379DD6' }}>: {slot.startTime} - {slot.endTime}</span>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p style={{ color: '#1F9378' }}>ไม่มีสล็อตที่เลือก</p>
+            )}
             <p className="text-lg font-semibold mt-4">จำนวนเงิน</p>
             <p className="text-lg" style={{ color: '#1F9378' }}>
               {bookingData ? `${bookingData.total_price} บาท` : "0 บาท"}
@@ -326,7 +356,6 @@ const PaymentPage = () => {
           </div>
         </div>
 
-        {/* Upload Slip Section */}
         <div className="bg-white p-4 rounded-lg shadow-xl w-full md:w-1/3 min-h-[600px] flex flex-col items-center">
           <div className="flex justify-center mt-4">
             <div
@@ -355,7 +384,6 @@ const PaymentPage = () => {
               />
             </div>
           </div>
-          {/* ตัวจับเวลานับถอยหลัง */}
           <div className="mt-4">
             <CountdownCircleTimer
               isPlaying
