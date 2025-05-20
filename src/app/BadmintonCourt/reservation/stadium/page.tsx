@@ -12,21 +12,34 @@ import { SearchAccountParams } from "@/dto/request/court";
 import { court, TimeSlot } from "@/dto/response/court";
 import { CreateAccountParams } from "@/dto/request/addmenu";
 
+// อินเทอร์เฟซสำหรับ selectedTimeSlots
+interface SelectedTimeSlot extends TimeSlot {
+  court: number;
+  bookingDate: string;
+}
+
 const StadiumPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [selectedTimeSlots, setSelectedTimeSlots] = useState<(TimeSlot & { court: number })[]>([]);
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<SelectedTimeSlot[]>([]);
   const [courts, setCourts] = useState<court[]>([]);
   const [stadiumName, setStadiumName] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [bookingDates, setBookingDates] = useState<string[]>([]);
   const MySwal = withReactContent(Swal);
 
-  // ดึง userId, stadiumId, และ bookingDate จาก query parameters
   const userId = searchParams.get("userId");
   const stadiumId = searchParams.get("stadiumId");
-  const bookingDate = searchParams.get("bookingDate");
+  const initialBookingDate = searchParams.get("bookingDate") || "2025-05-20"; // กำหนดค่าเริ่มต้นหากเป็น null
 
-  // ฟังก์ชันแปลงวันที่จาก ISO (YYYY-MM-DD) เป็นรูปแบบไทย (วัน/เดือน/ปี)
+  // ตรวจสอบว่า initialBookingDate มีค่าที่ถูกต้อง (รูปแบบ YYYY-MM-DD)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(initialBookingDate)) {
+    console.error("Invalid bookingDate format:", initialBookingDate);
+    MySwal.fire("ข้อผิดพลาด", "วันที่จองไม่ถูกต้อง", "error").then(() => {
+      router.push("/BadmintonCourt/reservation");
+    });
+  }
+
   const formatThaiDate = (isoDate: string | null) => {
     if (!isoDate) return "ไม่ระบุวันที่";
     const [year, month, day] = isoDate.split("-");
@@ -34,24 +47,17 @@ const StadiumPage = () => {
     return `${day}/${month}/${thaiYear}`;
   };
 
-  // ฟังก์ชันดึงชื่อสนาม
   const fetchStadiumName = async () => {
     try {
       if (!stadiumId) {
         setStadiumName("ไม่ระบุสนาม");
         return;
       }
-
       const response = await fetch("/api/stadium", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          StadiumID: parseInt(stadiumId),
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ StadiumID: parseInt(stadiumId) }),
       });
-
       const result = await response.json();
       if (result.status_code === 200 && result.data && result.data.length > 0) {
         setStadiumName(result.data[0].StadiumName || "ไม่ระบุสนาม");
@@ -64,34 +70,23 @@ const StadiumPage = () => {
     }
   };
 
-  // ฟังก์ชันดึงข้อมูลสนาม
-  const fetchCourtDetails = async () => {
+  const fetchCourtDetails = async (date: string) => {
     try {
-      if (!userId || !stadiumId || !bookingDate) {
+      if (!userId || !stadiumId || !date) {
         MySwal.fire("ข้อผิดพลาด", "ข้อมูลที่จำเป็นไม่ครบถ้วน", "error");
         return;
       }
-
-      const params: SearchAccountParams = {
-        StadiumID: parseInt(stadiumId),
-        BookingDate: bookingDate,
-      };
-
+      const params: SearchAccountParams = { StadiumID: parseInt(stadiumId), BookingDate: date };
       const response = await fetch("/api/court", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params),
       });
-
       const result = await response.json();
       if (result.status_code === 200) {
         const sortedCourts = result.data.map((court: court) => ({
           ...court,
-          TimeSlots: court.TimeSlots.sort((a: TimeSlot, b: TimeSlot) => {
-            return a.StartTime.localeCompare(b.StartTime);
-          }),
+          TimeSlots: court.TimeSlots.sort((a: TimeSlot, b: TimeSlot) => a.StartTime.localeCompare(b.StartTime)),
         }));
         setCourts(sortedCourts);
       } else {
@@ -104,47 +99,39 @@ const StadiumPage = () => {
     }
   };
 
-  // ฟังก์ชันเพิ่มวันจองด้วย PUT API
   const handleAddBooking = async () => {
     if (selectedTimeSlots.length === 0) {
       MySwal.fire("ข้อผิดพลาด", "กรุณาเลือกสล็อตเวลาอย่างน้อยหนึ่งสล็อต", "error");
       return;
     }
-
     try {
       for (const slot of selectedTimeSlots) {
         const court = courts.find((c) => c.CourtNumber === slot.court);
         const pricePerSlot = court ? court.PriceHour : 0;
-
         const bookingParams: CreateAccountParams = {
           UserID: parseInt(userId!),
           CourtId: slot.court,
           StartTime: slot.StartTime,
           EndTime: slot.EndTime,
           TotalPrice: pricePerSlot,
-          BookingDate: bookingDate!,
+          BookingDate: slot.bookingDate,
         };
-
         const response = await fetch("/api/addmenu", {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(bookingParams),
         });
-
         const result = await response.json();
         if (result.status_code !== 201) {
           MySwal.fire("ข้อผิดพลาด", "ไม่สามารถเพิ่มการจองได้", "error");
           return;
         }
       }
-
       const existingBookings = JSON.parse(localStorage.getItem("bookingCart") || "[]");
       const newBooking = {
         userId,
         stadiumId,
-        bookingDate,
+        bookingDate: initialBookingDate,
         slots: selectedTimeSlots.map((slot) => {
           const court = courts.find((c) => c.CourtNumber === slot.court);
           const pricePerSlot = court ? court.PriceHour : 0;
@@ -154,12 +141,12 @@ const StadiumPage = () => {
             startTime: slot.StartTime,
             endTime: slot.EndTime,
             price: pricePerSlot,
+            bookingDate: slot.bookingDate,
           };
         }),
       };
-
       localStorage.setItem("bookingCart", JSON.stringify([...existingBookings, newBooking]));
-      setSelectedTimeSlots([]); // รีเซ็ตสล็อตที่เลือก
+      setSelectedTimeSlots([]);
       router.push("/BadmintonCourt/reservation");
     } catch (error) {
       console.error("Error adding booking:", error);
@@ -167,17 +154,13 @@ const StadiumPage = () => {
     }
   };
 
-  // ฟังก์ชันดึงข้อมูลการจองด้วย GET API
   const fetchBookings = async () => {
     try {
       const response = await fetch(`/api/addmenu?UserID=${userId}`);
       const result = await response.json();
-      if (result.status_code === 200) {
-        return result.data;
-      } else {
-        MySwal.fire("ข้อผิดพลาด", "ไม่สามารถดึงข้อมูลการจองได้", "error");
-        return [];
-      }
+      if (result.status_code === 200) return result.data;
+      MySwal.fire("ข้อผิดพลาด", "ไม่สามารถดึงข้อมูลการจองได้", "error");
+      return [];
     } catch (error) {
       console.error("Error fetching bookings:", error);
       MySwal.fire("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการดึงข้อมูล", "error");
@@ -185,23 +168,16 @@ const StadiumPage = () => {
     }
   };
 
-  // ฟังก์ชันลบการจองทั้งหมดใน addmenu สำหรับ UserID
   const handleDeleteAllBookings = async () => {
     try {
       const bookings = await fetchBookings();
-      if (bookings.length === 0) {
-        return true;
-      }
-
+      if (bookings.length === 0) return true;
       for (const booking of bookings) {
         const response = await fetch("/api/addmenu", {
           method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ addmenuID: booking.addmenuID }),
         });
-
         const result = await response.json();
         if (result.status_code !== 200) {
           MySwal.fire("ข้อผิดพลาด", `ไม่สามารถลบการจอง ID ${booking.addmenuID} ได้`, "error");
@@ -216,17 +192,13 @@ const StadiumPage = () => {
     }
   };
 
-  // ฟังก์ชันลบการจองจาก API
   const handleDeleteBooking = async (addmenuID: number) => {
     try {
       const response = await fetch("/api/addmenu", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ addmenuID }),
       });
-
       const result = await response.json();
       if (result.status_code === 200) {
         MySwal.fire("สำเร็จ", "ลบการจองเรียบร้อยแล้ว", "success");
@@ -240,31 +212,25 @@ const StadiumPage = () => {
     }
   };
 
-  // ฟังก์ชันลบการจองปัจจุบัน (ยังไม่ได้บันทึก)
   const handleDeleteCurrentBooking = (index: number) => {
     setSelectedTimeSlots((prev) => prev.filter((_, i) => i !== index));
     MySwal.fire("สำเร็จ", "ลบการจองปัจจุบันเรียบร้อยแล้ว", "success");
     handleClick();
   };
 
-  // ฟังก์ชันจัดการปุ่มจอง
   const handleClick = async () => {
     if (selectedTimeSlots.length === 0) {
       MySwal.fire("ข้อผิดพลาด", "กรุณาเลือกสล็อตเวลาอย่างน้อยหนึ่งสล็อต", "error");
       return;
     }
-
     try {
-      // ดึงข้อมูลการจองจาก API
       const bookings = await fetchBookings();
-
-      // สร้างรายการการจองปัจจุบัน
       const currentBookings = selectedTimeSlots.map((slot, index) => {
         const court = courts.find((c) => c.CourtNumber === slot.court);
         const pricePerSlot = court ? court.PriceHour : 0;
         return {
           CourtId: slot.court,
-          BookingDate: bookingDate,
+          BookingDate: slot.bookingDate,
           StartTime: slot.StartTime,
           EndTime: slot.EndTime,
           TotalPrice: pricePerSlot,
@@ -272,16 +238,8 @@ const StadiumPage = () => {
           currentIndex: index,
         };
       });
-
-      // รวมการจองปัจจุบันกับการจองจาก API
       const allBookings = [...bookings, ...currentBookings];
-
-      // คำนวณราคารวมทั้งหมด
-      const grandTotalPrice = allBookings.reduce((total: number, booking: any) => {
-        return total + booking.TotalPrice;
-      }, 0);
-
-      // สร้างรายการการจองทั้งหมดสำหรับแสดงใน Swal
+      const grandTotalPrice = allBookings.reduce((total: number, booking: any) => total + booking.TotalPrice, 0);
       const bookingDetails = allBookings
         .map((booking: any, index: number) => `
           <div style="margin-bottom: 10px;">
@@ -322,44 +280,29 @@ const StadiumPage = () => {
         },
         buttonsStyling: false,
         didOpen: () => {
-          // เพิ่มฟังก์ชันลบใน window object
-          (window as any).deleteBooking = (addmenuID: number) => {
-            handleDeleteBooking(addmenuID);
-          };
-          (window as any).deleteCurrentBooking = (index: number) => {
-            handleDeleteCurrentBooking(index);
-          };
+          (window as any).deleteBooking = (addmenuID: number) => handleDeleteBooking(addmenuID);
+          (window as any).deleteCurrentBooking = (index: number) => handleDeleteCurrentBooking(index);
         },
       }).then(async (result) => {
         if (result.isConfirmed) {
-          // ลบข้อมูลทั้งหมดใน addmenu
           const deleteSuccess = await handleDeleteAllBookings();
-          if (!deleteSuccess) {
-            return;
-          }
-
-          // สร้างข้อมูลการจองสำหรับเก็บใน localStorage
+          if (!deleteSuccess) return;
           const bookingData = {
             userId,
             stadiumId,
-            bookingDate,
+            bookingDates: Array.from(new Set([...selectedTimeSlots.map(s => s.bookingDate), ...bookings.map((b: any) => b.BookingDate)])),
             slots: allBookings.map((booking: any) => ({
               courtId: booking.CourtId,
               slotTime: `${booking.StartTime.slice(0, 5)} - ${booking.EndTime.slice(0, 5)}`,
               startTime: booking.StartTime,
               endTime: booking.EndTime,
               price: booking.TotalPrice,
+              bookingDate: booking.BookingDate,
             })),
             total_price: grandTotalPrice,
           };
-
-          // เก็บข้อมูลใน localStorage
           localStorage.setItem("bookingData", JSON.stringify(bookingData));
-
-          // รีเซ็ต selectedTimeSlots
           setSelectedTimeSlots([]);
-
-          // Redirect ไปหน้า payment
           router.push("/BadmintonCourt/reservation/payment");
         }
       });
@@ -369,14 +312,12 @@ const StadiumPage = () => {
     }
   };
 
-  // ฟังก์ชันจัดการการเลือกสล็อตเวลา
   const handleTimeSlotClick = (slot: TimeSlot, courtIndex: number) => {
     if (slot.StatusName === "booked" || slot.StatusName === "ไม่ว่าง" || slot.StatusName === "กำลังจอง") {
       MySwal.fire("ข้อผิดพลาด", "สล็อตนี้ไม่สามารถจองได้", "warning");
       return;
     }
-
-    const newSlot = { ...slot, court: courtIndex };
+    const newSlot: SelectedTimeSlot = { ...slot, court: courtIndex, bookingDate: initialBookingDate };
     setSelectedTimeSlots((prev) => {
       const exists = prev.some(
         (selected) =>
@@ -393,13 +334,11 @@ const StadiumPage = () => {
               selected.court === courtIndex
             ),
         );
-      } else {
-        return [...prev, newSlot];
       }
+      return [...prev, newSlot];
     });
   };
 
-  // ฟังก์ชันแสดงสล็อตเวลา
   const renderTimeSlots = (courtIndex: number, timeSlots: TimeSlot[]) => {
     return timeSlots.map((slot, index) => {
       const isSelected = selectedTimeSlots.some(
@@ -409,7 +348,6 @@ const StadiumPage = () => {
           selected.court === courtIndex,
       );
       let statusClass = "";
-
       switch (slot.StatusName) {
         case "ไม่ว่าง":
           statusClass = styles.booked;
@@ -422,7 +360,6 @@ const StadiumPage = () => {
           statusClass = "";
           break;
       }
-
       return (
         <button
           key={index}
@@ -438,17 +375,15 @@ const StadiumPage = () => {
     });
   };
 
-  // โหลดข้อมูลเมื่อ component เริ่มต้น
   useEffect(() => {
-    if (stadiumId) {
+    if (stadiumId && initialBookingDate) {
+      setBookingDates([initialBookingDate]);
       fetchStadiumName();
-      fetchCourtDetails();
+      fetchCourtDetails(initialBookingDate);
     }
-  }, [userId, stadiumId, bookingDate]);
+  }, [userId, stadiumId, initialBookingDate]);
 
-  if (loading) {
-    return <div className={styles.container}>กำลังโหลด...</div>;
-  }
+  if (loading) return <div className={styles.container}>กำลังโหลด...</div>;
 
   return (
     <div className={styles.container}>
@@ -464,7 +399,7 @@ const StadiumPage = () => {
           <div className="flex items-center justify-between w-full">
             <div className="flex-1 text-center">
               <span className="text-white text-lg">
-                สนาม: {stadiumName} | วันที่: {formatThaiDate(bookingDate)}
+                สนาม: {stadiumName} | วันที่: {formatThaiDate(initialBookingDate)}
               </span>
             </div>
             <button className={styles.button} onClick={handleClick}>
@@ -478,17 +413,13 @@ const StadiumPage = () => {
         <div className="mt-20">
           {courts.map((courtItem) => (
             <div key={courtItem.CourtNumber}>
-              <div
-                className={`${courtItem.CourtNumber === 1 ? styles["mt-25-custom"] : "mt-2"} mb-6 p-4`}
-              >
+              <div className={`${courtItem.CourtNumber === 1 ? styles["mt-25-custom"] : "mt-2"} mb-6 p-4`}>
                 <Image src={courtImage} alt="BadmintonCourt" width={120} height={50} />
                 <label className="mt-30 mb-6 ml-5 rounded-lg bg-[#3BBC7A] p-2 text-white">
                   สนามที่ {courtItem.CourtNumber}
                 </label>
               </div>
-              <div className={styles.grouptimbox}>
-                {renderTimeSlots(courtItem.CourtNumber, courtItem.TimeSlots)}
-              </div>
+              <div className={styles.grouptimbox}>{renderTimeSlots(courtItem.CourtNumber, courtItem.TimeSlots)}</div>
             </div>
           ))}
         </div>
