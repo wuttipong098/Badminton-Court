@@ -45,7 +45,7 @@ export async function POST(request: Request) {
           'booking.start_time AS start_time',
           'booking.end_time AS end_time',
           "CONCAT(user.first_name, ' ', user.last_name) AS user_name",
-          'court.price_hour AS price_hour',
+          'booking.total_price AS price_hour',
         ])
         .where('booking.status_id = :statusId', { statusId: 2 })
         .andWhere('court.stadiumId = :stadiumId', { stadiumId }); // กรองตาม stadiumId
@@ -59,6 +59,8 @@ export async function POST(request: Request) {
       if (courtFilter && courtFilter !== "all") {
         query.andWhere("court.court_number = :courtNumber", { courtNumber: parseInt(courtFilter) });
       }
+
+      query.orderBy('booking.booking_date', 'DESC');
 
       const sqlQuery = query.getSql();
       console.log('Generated SQL:', sqlQuery);

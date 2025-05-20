@@ -125,7 +125,7 @@ const BadmintonCourtBooking = () => {
         />
       </div>
       <div className="flex flex-col min-w-[150px]">
-        <label className="text-black font-semibold mb-1">เลือกสนาม</label>
+        <label className="text-black font-semibold mb-1">เลือกคอร์ด</label>
         <select
           className="w-full h-10 p-2 border rounded text-black"
           value={court}
