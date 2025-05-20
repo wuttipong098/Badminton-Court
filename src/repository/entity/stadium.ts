@@ -27,7 +27,7 @@ export class stadium {
 
   @Column({ name: 'paymenttime', type: 'time' })
   paymentTime!: string;
-
+  
   @OneToMany(() => require('./imageow').imageow, (image: any) => image.stadium, { cascade: true })
   images!: any[];
 
