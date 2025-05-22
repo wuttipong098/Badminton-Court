@@ -184,7 +184,7 @@ export default function ApproveBookings() {
           <table className="w-full border-collapse text-black">
             <thead>
               <tr className="bg-gray-200">
-                <th className="p-2 border">สนามที่</th>
+                <th className="p-2 border">คอร์ดที่</th>
                 <th className="p-2 border">ชื่อคนจอง</th>
                 <th className="p-2 border">เบอร์โทร</th>
                 <th className="p-2 border">เวลาจอง</th>
