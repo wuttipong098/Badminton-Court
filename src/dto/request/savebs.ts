@@ -10,6 +10,7 @@ export interface TimeRange {
     promoPrice?: number;
     timeRanges: TimeRange[];
     paymentTime: number;
+    isBooked: number;
     userId: number;
     active: boolean;
     startTime: string;

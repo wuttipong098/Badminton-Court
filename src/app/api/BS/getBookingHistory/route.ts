@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       }
       const stadiumId = stadiumData.stadium_id;
 
+      // Query หลักสำหรับดึงข้อมูลการจอง
       const query = bookingRepo
         .createQueryBuilder('booking')
         .leftJoin('booking.court', 'court')
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
           'booking.total_price AS price_hour',
         ])
         .where('booking.status_id = :statusId', { statusId: 2 })
-        .andWhere('court.stadiumId = :stadiumId', { stadiumId }); // กรองตาม stadiumId
+        .andWhere('court.stadiumId = :stadiumId', { stadiumId });
 
       if (startDate) {
         query.andWhere('booking.booking_date >= :startDate', { startDate });
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
       query.orderBy('booking.booking_date', 'DESC');
 
       const sqlQuery = query.getSql();
-      console.log('Generated SQL:', sqlQuery);
+      console.log('Generated SQL for bookings:', sqlQuery);
 
       const bookingData = await query.getRawMany();
       console.log('Raw booking data:', bookingData);
@@ -85,6 +86,46 @@ export async function POST(request: Request) {
 
       const totalRevenue = formattedBookings.reduce((sum: number, b: any) => sum + b.price, 0);
 
+      // Query สำหรับสรุปรายรับตามเดือนและปี
+      const summaryQuery = bookingRepo
+        .createQueryBuilder('booking')
+        .leftJoin('booking.court', 'court')
+        .select([
+          "TO_CHAR(booking.booking_date, 'YYYY-MM') AS month_year", // Group by month and year
+          'SUM(booking.total_price) AS monthly_revenue',
+        ])
+        .where('booking.status_id = :statusId', { statusId: 2 })
+        .andWhere('court.stadiumId = :stadiumId', { stadiumId })
+        .groupBy("TO_CHAR(booking.booking_date, 'YYYY-MM')")
+        .orderBy("TO_CHAR(booking.booking_date, 'YYYY-MM')", 'ASC');
+
+      if (startDate) {
+        summaryQuery.andWhere('booking.booking_date >= :startDate', { startDate });
+      }
+      if (endDate) {
+        summaryQuery.andWhere('booking.booking_date <= :endDate', { endDate });
+      }
+      if (courtFilter && courtFilter !== "all") {
+        summaryQuery.andWhere("court.court_number = :courtNumber", { courtNumber: parseInt(courtFilter) });
+      }
+
+      const summarySql = summaryQuery.getSql();
+      console.log('Generated SQL for summary:', summarySql);
+
+      const summaryData = await summaryQuery.getRawMany();
+      console.log('Raw summary data:', summaryData);
+
+      // Format summary data
+      const monthlySummary = summaryData.map((s: any) => {
+        const [year, month] = s.month_year.split('-');
+        return {
+          month: parseInt(month),
+          year: parseInt(year),
+          monthName: new Date(year, month - 1).toLocaleString('th-TH', { month: 'long' }),
+          revenue: parseFloat(s.monthly_revenue || 0),
+        };
+      });
+
       return NextResponse.json(
         {
           success: true,
@@ -92,6 +133,7 @@ export async function POST(request: Request) {
           data: {
             bookings: formattedBookings,
             totalRevenue,
+            monthlySummary, // เพิ่มข้อมูลสรุปรายรับตามเดือนและปี
           },
         },
         { status: 200 }

@@ -3,27 +3,7 @@ import { getDbConnection } from '@/repository/db_connection';
 import { stadium } from '@/repository/entity/stadium';
 import { imageow } from '@/repository/entity/imageow';
 import { Court } from '@/repository/entity/Court';
-import { SlotTime } from '@/repository/entity/slot_time';
 import { closeDate } from '@/repository/entity/closeDate';
-import { In } from 'typeorm';
-
-// ฟังก์ชันช่วยสร้างสล็อตจาก start_time ถึง end_time (สล็อตละ 1 ชั่วโมง)
-function generateSlotTimes(startTime: string, endTime: string): { start: string; end: string }[] {
-  const slots: { start: string; end: string }[] = [];
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
-
-  let currentHour = startHour;
-  while (currentHour < endHour || (currentHour === endHour && startMinute < endMinute)) {
-    const nextHour = currentHour + 1;
-    const start = `${currentHour.toString().padStart(2, '0')}:00:00`;
-    const end = `${nextHour.toString().padStart(2, '0')}:00:00`;
-    slots.push({ start, end });
-    currentHour++;
-  }
-
-  return slots;
-}
 
 export async function POST(request: Request) {
   try {
@@ -83,6 +63,7 @@ export async function POST(request: Request) {
 
       await stadRepo.save(stad);
 
+      // 3) จัดการ closeDates
       const closeDateRepo = manager.getRepository(closeDate);
       const existingCloseDate = await closeDateRepo.findOne({
         where: { stadium_id: stadiumId },
@@ -101,7 +82,7 @@ export async function POST(request: Request) {
         await closeDateRepo.save(newCloseDate);
       }
 
-      // 3) Replace court images
+      // 4) Replace court images
       const imgRepo = manager.getRepository(imageow);
       await imgRepo.delete({ user_id: userId, stadium_id: stadiumId });
 
@@ -121,95 +102,12 @@ export async function POST(request: Request) {
         }
       }
 
-      // 4) อัปเดต price ในตาราง court
+      // 5) อัปเดต price ในตาราง court
       const courtRepo = manager.getRepository(Court);
       await courtRepo.update(
         { stadiumId },
         { price: price } // อัปเดต price ให้ทุก court ที่มี stadiumId นี้
       );
-
-      // 5) สร้างสล็อตใน slot_time
-      const slotTimeRepo = manager.getRepository(SlotTime);
-
-      // ดึง courtId, start_time, end_time
-      const courts = await courtRepo.find({
-        where: { stadiumId },
-        select: ['id', 'start_time', 'end_time'],
-      });
-
-      if (courts.length === 0) {
-        throw new Error('No courts found for this stadium');
-      }
-
-      // วันที่เริ่มและสิ้นสุด (30 วัน)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 30);
-
-      // วันที่หยุด
-      const closeDateStrings =
-        closeDates && Array.isArray(closeDates)
-          ? closeDates.map((d) => new Date(d).toISOString().split('T')[0])
-          : [];
-
-      const defaultStatusId = 1; // ว่าง
-
-      // สร้างสล็อตสำหรับแต่ละ court
-      for (const court of courts) {
-        const courtId = court.id;
-        if (!court.start_time || !court.end_time) {
-          console.warn(`Court ${courtId} missing start_time or end_time`);
-          continue;
-        }
-
-        // สร้างสล็อตจาก start_time ถึง end_time
-        const slotTimes = generateSlotTimes(court.start_time, court.end_time);
-
-        for (let date = new Date(today); date <= endDate; date.setDate(date.getDate() + 1)) {
-          const dateString = date.toISOString().split('T')[0];
-
-          // ข้ามวันที่หยุด
-          if (closeDateStrings.includes(dateString)) {
-            continue;
-          }
-
-          // ตรวจสอบสล็อต
-          const existingSlots = await slotTimeRepo.find({
-            where: {
-              court_id: courtId,
-              booking_date: new Date(dateString),
-            },
-          });
-
-          for (const slot of slotTimes) {
-            const slotExists = existingSlots.some(
-              (s) => s.start_time === slot.start && s.end_time === slot.end
-            );
-
-            if (!slotExists) {
-              const newSlot = slotTimeRepo.create({
-                court_id: courtId,
-                booking_date: new Date(dateString),
-                start_time: slot.start,
-                end_time: slot.end,
-                status_id: defaultStatusId,
-                created_date: new Date(),
-                update_date: null,
-              });
-
-              await slotTimeRepo.save(newSlot);
-            }
-          }
-        }
-      }
-
-      // 6) ลบสล็อตเกิน 30 วัน
-      const courtIds = courts.map((c) => c.id);
-      await slotTimeRepo.delete({
-        court_id: In(courtIds),
-        booking_date: new Date(endDate.toISOString().split('T')[0]),
-      });
     });
 
     return NextResponse.json(
