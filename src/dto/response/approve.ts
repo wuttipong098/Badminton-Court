@@ -6,6 +6,7 @@ export interface User {
     StadiumName?: string;
     Location?: string;
     PhoneNumber: string;
+    Image?: string[];
 }
 
 export interface UserResponseModel {
