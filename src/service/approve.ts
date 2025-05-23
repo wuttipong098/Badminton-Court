@@ -1,9 +1,9 @@
 import { SearchAccountParams, DeleteAccountParams, CreateAccountParams } from '@/dto/request/approve';
 import { UserResponseModel, User } from '@/dto/response/approve';
-import { register } from '@/repository/entity/approve_register';
+import { registerB } from '@/repository/entity/registerBS';
 import * as userRepo from '@/repository/action/approve';
 
-function formatUserResponse(usersData: { total: number; data: register[] }): UserResponseModel {
+function formatUserResponse(usersData: { total: number; data: (registerB & { images: string[] })[] }): UserResponseModel {
   return {
     status_code: 200,
     status_message: 'Data fetched successfully',
@@ -15,12 +15,13 @@ function formatUserResponse(usersData: { total: number; data: register[] }): Use
       StadiumName: user.stadium_name,
       Location: user.location,
       PhoneNumber: user.phone_number,
+      Image: user.images, // เพิ่มฟิลด์ Image
     })),
     total: usersData.total,
   };
 }
 
-function formatSingleUserResponse(user: register): UserResponseModel {
+function formatSingleUserResponse(user: registerB): UserResponseModel {
   return {
     status_code: 201,
     status_message: 'User created successfully',
@@ -32,6 +33,7 @@ function formatSingleUserResponse(user: register): UserResponseModel {
       StadiumName: user.stadium_name,
       Location: user.location,
       PhoneNumber: user.phone_number,
+      Image: [], // เริ่มต้นเป็น array ว่าง เนื่องจากยังไม่ได้อัปโหลดภาพ
     }],
     total: 1,
   };
@@ -84,7 +86,6 @@ export const deleteUser = async (params: DeleteAccountParams): Promise<UserRespo
 
 export const createUser = async (params: CreateAccountParams): Promise<UserResponseModel> => {
   try {
-    // ตรวจสอบข้อมูลที่จำเป็น
     if (!params.first_name || !params.last_name || !params.user_name || !params.password || !params.phone_number || !params.stadium_name || !params.location) {
       return {
         status_code: 400,
@@ -94,10 +95,7 @@ export const createUser = async (params: CreateAccountParams): Promise<UserRespo
       };
     }
 
-    // เรียกใช้ repository เพื่อสร้างผู้ใช้
     const createdUser = await userRepo.createUser(params);
-
-    // จัดรูปแบบ response
     return formatSingleUserResponse(createdUser);
   } catch (error: unknown) {
     console.error('Error creating user:', error);

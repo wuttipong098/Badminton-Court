@@ -1,11 +1,12 @@
 import { getDbConnection } from '../db_connection';
-import { register } from '@/repository/entity/approve_register';
+import { registerB } from '@/repository/entity/registerBS';
 import { user } from '@/repository/entity/login';
 import { stadium } from '@/repository/entity/stadium';
+import { imaregister } from '@/repository/entity/imaregister'; 
 import { SearchAccountParams, DeleteAccountParams, CreateAccountParams } from '@/dto/request/approve';
 import { Like } from 'typeorm';
 
-export const findUsers = async (params: SearchAccountParams): Promise<{ data: register[]; total: number }> => {
+export const findUsers = async (params: SearchAccountParams): Promise<{ data: (registerB & { images: string[] })[]; total: number }> => {
   return await getDbConnection(async (manager) => {
     const where: any = {};
 
@@ -13,15 +14,51 @@ export const findUsers = async (params: SearchAccountParams): Promise<{ data: re
       where.stadium_name = Like(`%${params.StadiumName}%`);
     }
 
-    const total = await manager.count(register, {
+    const total = await manager.count(registerB, {
       where,
     });
 
-    const data = await manager.find(register, {
+    const data = await manager.find(registerB, {
       where,
+      relations: ['images'], // โหลด relation images
     });
 
-    return { data, total };
+    // แปลงภาพ bytea เป็น Base64
+    const dataWithImages = data.map((user) => ({
+      ...user,
+      images: user.images
+        ? user.images
+            .filter((img) => img.image !== null)
+            .map((img) => `data:image/jpeg;base64,${Buffer.from(img.image!).toString('base64')}`)
+        : [],
+    }));
+
+    return { data: dataWithImages, total };
+  });
+};
+
+export const findUserImages = async (registerId: number): Promise<string[]> => {
+  return await getDbConnection(async (manager) => {
+    try {
+      if (!registerId || isNaN(registerId) || registerId <= 0) {
+        throw new Error('Invalid or missing RegisterID');
+      }
+
+      const images = await manager.find(imaregister, {
+        where: { register_id: registerId },
+        select: ['image'],
+      });
+
+      // แปลงข้อมูล bytea เป็น Base64
+      const imageUrls = images
+        .filter((img) => img.image !== null)
+        .map((img) => `data:image/jpeg;base64,${Buffer.from(img.image!).toString('base64')}`);
+
+      return imageUrls;
+    } catch (error) {
+      console.error('Error fetching images:', error);
+      throw error;
+    }
   });
 };
 
@@ -32,7 +69,7 @@ export const deleteUser = async (params: DeleteAccountParams): Promise<boolean> 
         throw new Error('Invalid or missing RegisterID');
       }
 
-      const result = await manager.delete(register, {
+      const result = await manager.delete(registerB, {
         register_id: params.RegisterID,
       });
 
@@ -48,7 +85,7 @@ export const deleteUser = async (params: DeleteAccountParams): Promise<boolean> 
   });
 };
 
-export const createUser = async (params: CreateAccountParams): Promise<register> => {
+export const createUser = async (params: CreateAccountParams): Promise<registerB> => {
   return await getDbConnection(async (manager) => {
     try {
       // ตรวจสอบข้อมูลที่จำเป็น
@@ -59,8 +96,8 @@ export const createUser = async (params: CreateAccountParams): Promise<register>
       // เริ่ม transaction
       return await manager.transaction(async (transactionalEntityManager) => {
         // 1. สร้าง record ในตาราง register
-        const newRegister = new register();
-        newRegister.first_name = params.first_name!; // ใช้ non-null assertion
+        const newRegister = new registerB();
+        newRegister.first_name = params.first_name!;
         newRegister.last_name = params.last_name!;
         newRegister.user_name = params.user_name!;
         newRegister.password = params.password!;
@@ -70,7 +107,7 @@ export const createUser = async (params: CreateAccountParams): Promise<register>
         newRegister.location = params.location!;
         newRegister.created_date = new Date();
 
-        const savedRegister = await transactionalEntityManager.save(register, newRegister);
+        const savedRegister = await transactionalEntityManager.save(registerB, newRegister);
 
         // 2. สร้าง record ในตาราง user
         const newUser = new user();
