@@ -6,23 +6,6 @@ import { stadium } from '@/repository/entity/stadium';
 import { closeDate } from '@/repository/entity/closeDate';
 import { In, Between } from 'typeorm';
 
-function generateTimeSlots(startTime: string, endTime: string): string[] {
-  const slots: string[] = [];
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-  const [endHour, endMinute] = endTime.split(':').map(Number);
-
-  let currentHour = startHour;
-  while (currentHour < endHour || (currentHour === endHour && startMinute < endMinute)) {
-    const nextHour = currentHour + 1;
-    const start = `${currentHour.toString().padStart(2, '0')}:00`;
-    const end = `${nextHour.toString().padStart(2, '0')}:00`;
-    slots.push(`${start}-${end}`);
-    currentHour++;
-  }
-
-  return slots;
-}
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -68,11 +51,11 @@ export async function GET(request: Request) {
 
       const stadiumId = stad.stadium_id;
 
-      const a = manager.getRepository(closeDate);
-      const aa = await a.findOne({ where: { stadium_id: stadiumId } });
-      if (aa.closeDates) {
+      const closeDateRepo = manager.getRepository(closeDate);
+      const closeDateData = await closeDateRepo.findOne({ where: { stadium_id: stadiumId } });
+      if (closeDateData && closeDateData.closeDates) {
         try {
-          const closeDates = JSON.parse(aa.closeDates);
+          const closeDates = JSON.parse(closeDateData.closeDates);
           if (Array.isArray(closeDates) && closeDates.includes(dateString)) {
             return NextResponse.json(
               { success: false, message: 'วันที่เลือกเป็นวันหยุดสนาม', data: { courts: [] } },
@@ -88,6 +71,7 @@ export async function GET(request: Request) {
       const courts = await courtRepo.find({
         where: { stadiumId },
         select: ['id', 'courtId', 'stadiumId', 'start_time', 'end_time'],
+        order: { courtId: 'ASC', start_time: 'ASC' },
       });
 
       if (courts.length === 0) {
@@ -97,8 +81,9 @@ export async function GET(request: Request) {
         );
       }
 
-      console.log("Court IDs (court_id):", courts.map(c => c.id));
-      console.log("Court Numbers (court_number):", courts.map(c => c.courtId));
+      console.log("Court IDs (id):", courts.map(c => c.id));
+      console.log("Court Numbers (courtId):", courts.map(c => c.courtId));
+      console.log("Court Time Ranges:", courts.map(c => `${c.start_time}-${c.end_time}`));
 
       const slotTimeRepo = manager.getRepository(SlotTime);
       const slots = await slotTimeRepo.find({
@@ -106,57 +91,42 @@ export async function GET(request: Request) {
           court_id: In(courts.map((c) => c.id)),
           booking_date: Between(new Date(`${dateString}T00:00:00Z`), new Date(`${dateString}T23:59:59Z`)),
         },
-        select: ['court_id', 'start_time', 'status_id'],
+        select: ['court_id', 'start_time', 'end_time', 'status_id'],
+        order: { court_id: 'ASC', start_time: 'ASC' },
       });
 
       console.log("SlotTime data raw:", slots);
 
-      // กลุ่มตาม court_number และรวม schedule จาก court_id
+      // กลุ่มตาม court_number และสร้าง schedule จาก Court
       const groupedCourts = courts.reduce((acc, court) => {
-        const key = court.courtId; // ใช้ court_number เป็น key
+        const key = court.courtId;
         if (!acc[key]) {
           acc[key] = {
+            stadiumId: court.stadiumId,
             courtNumber: court.courtId,
-            courtIds: [court.id], // เก็บ court_id ที่เกี่ยวข้อง
+            courtIds: [court.id],
             schedule: [],
           };
-        } else {
-          acc[key].courtIds.push(court.id);
         }
+        const time = `${court.start_time.split(':').slice(0, 2).join(':')}-${court.end_time.split(':').slice(0, 2).join(':')}`;
+        acc[key].schedule.push({ time, status: 1, courtId: court.id }); // เริ่มต้น status: 1 (ว่าง)
         return acc;
-      }, {} as Record<number, { courtNumber: number; courtIds: number[]; schedule: { time: string; status: number | null }[] }>);
-
-      // เพิ่ม schedule จาก timeSlots ของแต่ละ court_id
-      Object.values(groupedCourts).forEach((court) => {
-        court.courtIds.forEach((courtId) => {
-          const courtData = courts.find(c => c.id === courtId);
-          if (courtData && courtData.start_time && courtData.end_time) {
-            const timeSlots = generateTimeSlots(courtData.start_time, courtData.end_time);
-            const existingTimes = new Set(court.schedule.map(s => s.time));
-            timeSlots.forEach(timeSlot => {
-              if (!existingTimes.has(timeSlot)) {
-                court.schedule.push({ time: timeSlot, status: null });
-              }
-            });
-          }
-        });
-        court.schedule.sort((a, b) => a.time.localeCompare(b.time)); // เรียงเวลา
-      });
+      }, {} as Record<number, { stadiumId: number; courtNumber: number; courtIds: number[]; schedule: { time: string; status: number | null; courtId: number }[] }>);
 
       // อัปเดตสถานะจาก SlotTime
       Object.values(groupedCourts).forEach((court) => {
-        const courtSlots = slots.filter((s) => court.courtIds.includes(s.court_id));
-        court.schedule.forEach((slot, idx) => {
+        court.schedule.forEach((slot) => {
           const [startStr] = slot.time.split('-');
-          const matchedSlot = courtSlots.find((s) => {
+          const courtId = slot.courtId;
+          const matchedSlot = slots.find((s) => {
             const slotStartTime = s.start_time.split(':').slice(0, 2).join(':');
-            return slotStartTime === startStr;
+            return s.court_id === courtId && slotStartTime === startStr;
           });
           if (matchedSlot) {
-            court.schedule[idx].status = matchedSlot.status_id;
-            console.log(`Matched slot for court ${court.courtNumber} at ${startStr}: status_id = ${matchedSlot.status_id}`);
+            slot.status = matchedSlot.status_id;
+            console.log(`Matched slot for court ${court.courtNumber} at ${slot.time} (court_id: ${courtId}): status_id = ${matchedSlot.status_id}`);
           } else {
-            console.log(`No slot found for court ${court.courtNumber} at ${startStr} on ${dateString}`);
+            console.log(`No slot found for court ${court.courtNumber} at ${slot.time} (court_id: ${courtId}) on ${dateString}`);
           }
         });
       });

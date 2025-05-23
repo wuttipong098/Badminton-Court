@@ -2,26 +2,42 @@ import { getDbConnection } from '../db_connection';
 import { Court } from '@/repository/entity/Court';
 import { stadium } from '@/repository/entity/stadium';
 import { SlotTime } from '@/repository/entity/slot_time';
+import { bookings } from '@/repository/entity/bookings';
 import { SaveBookingSettingRequest } from '@/dto/request/savebs';
 import { SaveBookingSettingResponse } from '@/dto/response/savebs';
-import { In } from 'typeorm';
+import { In, LessThan, MoreThan } from 'typeorm';
 
-// ฟังก์ชันช่วยสร้างสล็อตจาก start_time ถึง end_time (สล็อตละ 1 ชั่วโมง)
+// ฟังก์ชันช่วยสร้างสล็อตจาก start_time ถึง end_time (รองรับครึ่งชั่วโมง)
 function generateSlotTimes(startTime: string, endTime: string): { start: string; end: string }[] {
   const slots: { start: string; end: string }[] = [];
   const [startHour, startMinute] = startTime.split(':').map(Number);
   const [endHour, endMinute] = endTime.split(':').map(Number);
-
   let currentHour = startHour;
-  while (currentHour < endHour || (currentHour === endHour && startMinute < endMinute)) {
-    const nextHour = currentHour + 1;
-    const start = `${currentHour.toString().padStart(2, '0')}:00:00`;
-    const end = `${nextHour.toString().padStart(2, '0')}:00:00`;
+  let currentMinute = startMinute;
+
+  while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+    const nextMinute = currentMinute + 30;
+    const nextHour = currentHour + Math.floor(nextMinute / 60);
+    const newMinute = nextMinute % 60;
+    const start = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}:00`;
+    const end = `${nextHour.toString().padStart(2, '0')}:${newMinute.toString().padStart(2, '0')}:00`;
     slots.push({ start, end });
-    currentHour++;
+    currentMinute = newMinute;
+    if (currentMinute === 0) currentHour = nextHour;
   }
 
   return slots;
+}
+
+// ฟังก์ชันช่วยแปลงวันที่ให้เป็น string ในรูปแบบ YYYY-MM-DD
+function ensureDateString(dateInput: Date | string): string {
+  if (typeof dateInput === 'string') {
+    return new Date(dateInput).toISOString().split('T')[0];
+  }
+  if (dateInput instanceof Date) {
+    return dateInput.toISOString().split('T')[0];
+  }
+  throw new Error(`Invalid date format: ${dateInput}`);
 }
 
 export async function saveOrUpdateBookingSettingsRepo(
@@ -46,6 +62,34 @@ export async function saveOrUpdateBookingSettingsRepo(
 
     const stadiumIdNum = stadiums.stadium_id;
 
+    // ดึงข้อมูล Court เดิมทั้งหมดสำหรับ courtId, stadiumId, และ userId
+    const courtRepo = manager.getRepository(Court);
+    const existingCourts = await courtRepo.find({
+      where: {
+        courtId: courtIdNum,
+        stadiumId: stadiumIdNum,
+        userId: data.userId,
+      },
+      select: ['id', 'start_time', 'end_time'],
+    });
+
+    // สร้าง set ของช่วงเวลาที่ต้องการเก็บ (จาก data.timeRanges)
+    const newTimeRanges = new Set(
+      data.timeRanges.map(range => `${range.start}-${range.end}`)
+    );
+
+    // ลบ record ใน Court ที่ไม่อยู่ใน data.timeRanges
+    const courtsToDelete = existingCourts.filter(court => {
+      const currentRange = `${court.start_time}-${court.end_time}`;
+      return !newTimeRanges.has(currentRange);
+    });
+
+    if (courtsToDelete.length > 0) {
+      const courtIdsToDelete = courtsToDelete.map(c => c.id);
+      console.log(`Deleting Court records with IDs: ${courtIdsToDelete}`);
+      await courtRepo.delete({ id: In(courtIdsToDelete) });
+    }
+
     // อัปเดตหรือเพิ่มข้อมูลในตาราง Court
     for (const range of data.timeRanges) {
       const existing = await manager.findOne(Court, {
@@ -59,19 +103,17 @@ export async function saveOrUpdateBookingSettingsRepo(
       });
 
       if (existing) {
-        // ✅ แก้ไขข้อมูลเดิม
         existing.price = data.price.toString();
         existing.active = data.active ?? true;
         await manager.save(Court, existing);
       } else {
-        // ➕ เพิ่มใหม่หากไม่มี
         const court = new Court();
         court.courtId = courtIdNum;
         court.stadiumId = stadiumIdNum;
         court.price = data.price.toString();
         court.time = `${range.start} - ${range.end}`;
         court.userId = data.userId;
-        court.isBooked = 1;
+        court.isBooked = 1; // เปลี่ยนเป็น 1 เพื่อให้โชว์สีเขียว
         court.active = data.active ?? true;
         court.start_time = range.start;
         court.end_time = range.end;
@@ -80,61 +122,103 @@ export async function saveOrUpdateBookingSettingsRepo(
       }
     }
 
-    // เพิ่มส่วนสร้าง slot_time โดยใช้ข้อมูลจาก Court ที่บันทึก
-    const courtRepo = manager.getRepository(Court);
-    const slotTimeRepo = manager.getRepository(SlotTime);
-
-    // ดึงข้อมูล Court ที่เพิ่งบันทึก
-    const courts = await courtRepo.find({
+    // ดึงข้อมูล Court ที่อัปเดตล่าสุด
+    const updatedCourt = await courtRepo.find({
       where: { courtId: courtIdNum, stadiumId: stadiumIdNum },
       select: ['id', 'start_time', 'end_time'],
     });
 
-    if (courts.length === 0) {
+    if (updatedCourt.length === 0) {
       return {
         success: false,
-        message: 'ไม่พบข้อมูล Court สำหรับการสร้าง slot_time',
+        message: 'ไม่พบข้อมูล Court หลังการอัปเดต',
       };
     }
 
-    // วันที่เริ่มและสิ้นสุด (30 วัน)
+    const slotTimeRepo = manager.getRepository(SlotTime);
+    const bookingRepo = manager.getRepository(bookings);
+
+    // สร้างสล็อตใหม่ตามช่วงเวลาใหม่
+    const newSlotTimesMap = new Map<number, { start: string; end: string }[]>();
+    updatedCourt.forEach(court => {
+      newSlotTimesMap.set(court.id, generateSlotTimes(court.start_time, court.end_time));
+    });
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const endDate = new Date(today);
     endDate.setDate(today.getDate() + 30);
 
-    const defaultStatusId = 1; // ว่าง
+    const defaultStatusId = 1;
 
-    // สร้างสล็อตสำหรับแต่ละ court
-    for (const court of courts) {
-      const courtId = court.id;
-      if (!court.start_time || !court.end_time) {
-        console.warn(`Court ${courtId} missing start_time or end_time`);
-        continue;
+    // ดึงสล็อตเก่าที่มีอยู่
+    const existingSlots = await slotTimeRepo.find({
+      where: { court_id: In(updatedCourt.map(c => c.id)) },
+      select: ['slot_time_id', 'court_id', 'start_time', 'end_time', 'booking_date'],
+    });
+
+    console.log('Existing Slots:', existingSlots);
+
+    // ดึงวันที่ที่มีการจองในอนาคต
+    const bookedDates = await bookingRepo.createQueryBuilder('booking')
+      .select('DISTINCT booking.booking_date')
+      .where('booking.court_id IN (:...courtIds)', { courtIds: updatedCourt.map(c => c.id) })
+      .andWhere('booking.booking_date >= :today', { today: today.toISOString().split('T')[0] })
+      .getRawMany();
+
+    console.log('Booked Dates:', bookedDates);
+
+    const bookedDateStrings = bookedDates.map(b => {
+      try {
+        return ensureDateString(b.booking_date);
+      } catch (error) {
+        console.error(`Error converting booking_date: ${b.booking_date}`, error);
+        return null;
       }
+    }).filter((date): date is string => date !== null);
 
-      // สร้างสล็อตจาก start_time ถึง end_time
-      const slotTimes = generateSlotTimes(court.start_time, court.end_time);
+    console.log('Booked Date Strings:', bookedDateStrings);
 
-      for (let date = new Date(today); date <= endDate; date.setDate(date.getDate() + 1)) {
-        const dateString = date.toISOString().split('T')[0];
+    // วนลูปวันที่เพื่อจัดการสล็อต
+    for (let date = new Date(today); date <= endDate; date.setDate(date.getDate() + 1)) {
+      const dateString = date.toISOString().split('T')[0];
+      const isBooked = bookedDateStrings.includes(dateString);
 
-        // ตรวจสอบสล็อต
-        const existingSlots = await slotTimeRepo.find({
-          where: {
-            court_id: courtId,
-            booking_date: new Date(dateString),
-          },
+      console.log(`Processing date: ${dateString}, isBooked: ${isBooked}`);
+
+      for (const court of updatedCourt) {
+        const newSlotTimes = newSlotTimesMap.get(court.id) || [];
+        const slotsForDate = existingSlots.filter(s => {
+          try {
+            const slotDateString = ensureDateString(s.booking_date);
+            return s.court_id === court.id && slotDateString === dateString;
+          } catch (error) {
+            console.error(`Error converting slot booking_date: ${s.booking_date}`, error);
+            return false;
+          }
         });
 
-        for (const slot of slotTimes) {
-          const slotExists = existingSlots.some(
-            (s) => s.start_time === slot.start && s.end_time === slot.end
-          );
+        console.log(`Slots for court ${court.id} on ${dateString}:`, slotsForDate);
 
+        // ลบสล็อตเก่าที่ไม่อยู่ในช่วงใหม่
+        const slotsToDelete = slotsForDate.filter(slot =>
+          !newSlotTimes.some(newSlot => newSlot.start === slot.start_time && newSlot.end === slot.end_time)
+        );
+
+        console.log(`Slots to delete for court ${court.id} on ${dateString}:`, slotsToDelete);
+
+        if (slotsToDelete.length > 0) {
+          const slotIdsToDelete = slotsToDelete.map(s => s.slot_time_id);
+          console.log(`Deleting slot_time_ids for court ${court.id}: ${slotIdsToDelete}`);
+          await slotTimeRepo.delete({ slot_time_id: In(slotIdsToDelete) });
+        }
+
+        // เพิ่มสล็อตใหม่
+        for (const slot of newSlotTimes) {
+          const slotExists = slotsForDate.some(s => s.start_time === slot.start && s.end_time === slot.end);
           if (!slotExists) {
             const newSlot = slotTimeRepo.create({
-              court_id: courtId,
+              court_id: court.id,
               booking_date: new Date(dateString),
               start_time: slot.start,
               end_time: slot.end,
@@ -142,7 +226,7 @@ export async function saveOrUpdateBookingSettingsRepo(
               created_date: new Date(),
               update_date: null,
             });
-
+            console.log(`Creating new slot for court ${court.id} on ${dateString}:`, slot);
             await slotTimeRepo.save(newSlot);
           }
         }
@@ -150,15 +234,14 @@ export async function saveOrUpdateBookingSettingsRepo(
     }
 
     // ลบสล็อตเกิน 30 วัน
-    const courtIds = courts.map((c) => c.id);
     await slotTimeRepo.delete({
-      court_id: In(courtIds),
-      booking_date: new Date(endDate.toISOString().split('T')[0]),
+      court_id: In(updatedCourt.map(c => c.id)),
+      booking_date: MoreThan(endDate),
     });
 
     return {
       success: true,
-      message: 'อัปเดต/เพิ่มการตั้งค่าการจองและสร้าง slot_time เรียบร้อยแล้ว',
+      message: 'อัปเดต/เพิ่มการตั้งค่าการจองและจัดการ slot_time สำหรับวันที่ไม่มีจองเรียบร้อยแล้ว',
     };
   });
 }
